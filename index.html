@@ -6,154 +6,145 @@
 <title>WorkMap</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ── THEMES ──────────────────────────────────────────────── */
+/* ══ THEMES ══════════════════════════════════════════════════ */
 :root{
-  --bg:#0f0f11;--bg2:#16161a;--bg3:#1e1e24;--bg4:#26262e;
-  --border:#2e2e38;--border2:#3a3a48;
-  --text:#e8e8f0;--text2:#9898b0;--text3:#5a5a72;
-  --node-bg:#1e1e2a;--node-fg:#e8e8f0;--node-sub:#9898b0;
-  --dot-grid:rgba(255,255,255,.05);
-  --accent:#7c6af7;--accent2:#5c4fd6;--accent-lo:#7c6af720;
-  --green:#3ecf8e;--amber:#f59e0b;--coral:#f87171;
-  --r:10px;--rs:6px;--rl:16px;
+  --bg:#0d0d0f;--bg2:#141416;--bg3:#1c1c20;--bg4:#242428;--bg5:#2c2c32;
+  --border:#2a2a30;--border2:#363640;
+  --text:#f0f0f8;--text2:#9090a8;--text3:#505060;
+  --node-bg:#18181e;--node-fg:#f0f0f8;--node-sub:#7070888;
+  --grid:rgba(255,255,255,.04);
+  --accent:#7c6af7;--accent2:#6356e0;--accent-lo:rgba(124,106,247,.12);
+  --green:#34d399;--amber:#fbbf24;--coral:#f87171;--blue:#60a5fa;
+  --shadow:0 2px 20px rgba(0,0,0,.5);
+  --r:12px;--rs:7px;--rl:18px;
   --font:'Inter',system-ui,sans-serif;
 }
 [data-theme="light"]{
-  --bg:#f4f3ee;--bg2:#ffffff;--bg3:#edece5;--bg4:#e4e2d8;
-  --border:#d5d3c7;--border2:#c5c3b5;
-  --text:#1c1c1c;--text2:#504e44;--text3:#9a9880;
-  --node-bg:#ffffff;--node-fg:#1c1c1c;--node-sub:#504e44;
-  --dot-grid:rgba(0,0,0,.05);
-  --accent:#5148cc;--accent2:#3e38b0;--accent-lo:#5148cc18;
-  --green:#15803d;--amber:#b45309;--coral:#b91c1c;
+  --bg:#f0ede8;--bg2:#faf9f6;--bg3:#ede9e2;--bg4:#e2ddd4;--bg5:#d5cfc4;
+  --border:#d0cac0;--border2:#bfb8ac;
+  --text:#1a1814;--text2:#5a5348;--text3:#9a9080;
+  --node-bg:#faf9f6;--node-fg:#1a1814;--node-sub:#6a6358;
+  --grid:rgba(0,0,0,.04);
+  --accent:#5b4de8;--accent2:#4a3ed0;--accent-lo:rgba(91,77,232,.1);
+  --green:#16a34a;--amber:#d97706;--coral:#dc2626;--blue:#2563eb;
+  --shadow:0 2px 20px rgba(0,0,0,.1);
 }
-[data-theme="warm"]{
-  --bg:#faf6ee;--bg2:#fff9f2;--bg3:#f3ebe0;--bg4:#e8dccb;
-  --border:#ddd0ba;--border2:#cdc0a8;
-  --text:#2e1f0c;--text2:#7a5c38;--text3:#b09070;
-  --node-bg:#fff9f2;--node-fg:#2e1f0c;--node-sub:#7a5c38;
-  --dot-grid:rgba(0,0,0,.04);
-  --accent:#c05c20;--accent2:#a04810;--accent-lo:#c05c2018;
-  --green:#4a7c3f;--amber:#b06000;--coral:#b03020;
-}
-[data-theme="slate"]{
-  --bg:#181e2e;--bg2:#202840;--bg3:#283050;--bg4:#303860;
-  --border:#384070;--border2:#485088;
-  --text:#dde4ff;--text2:#8890cc;--text3:#545aaa;
-  --node-bg:#202840;--node-fg:#dde4ff;--node-sub:#8890cc;
-  --dot-grid:rgba(255,255,255,.04);
-  --accent:#6a88f7;--accent2:#4a68e0;--accent-lo:#6a88f720;
-  --green:#3ecf8e;--amber:#f59e0b;--coral:#f87171;
-}
-/* ── RESET ───────────────────────────────────────────────── */
+/* ══ RESET ═══════════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background .25s,color .25s}
 button{font-family:var(--font);cursor:pointer;border:none;outline:none}
 input,textarea,select{font-family:var(--font);outline:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes glow-red{0%,100%{filter:drop-shadow(0 0 4px rgba(248,113,113,.5))}50%{filter:drop-shadow(0 0 10px rgba(248,113,113,.9))}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
 
-/* ── TOPBAR ──────────────────────────────────────────────── */
-#topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;z-index:100}
-#logo{font-size:15px;font-weight:700;color:var(--accent);letter-spacing:-.02em;margin-right:6px;white-space:nowrap}
-#logo em{font-style:normal;color:var(--text2);font-weight:400}
-.tbtn{font-size:12px;padding:5px 11px;border-radius:var(--rs);background:transparent;color:var(--text2);border:1px solid transparent;white-space:nowrap;transition:all .12s}
-.tbtn.active,.tbtn:hover{background:var(--bg4);color:var(--text);border-color:var(--border)}
-#tb-right{margin-left:auto;display:flex;align-items:center;gap:7px}
-.sstatus{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
-.sdot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+/* ══ TOPBAR ══════════════════════════════════════════════════ */
+#topbar{height:48px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;z-index:100}
+#logo{font-size:14px;font-weight:700;letter-spacing:-.02em;color:var(--accent);margin-right:6px}
+.tbtn{font-size:12px;padding:5px 11px;border-radius:var(--rs);background:transparent;color:var(--text2);border:1px solid transparent;transition:all .12s;white-space:nowrap}
+.tbtn:hover,.tbtn.on{background:var(--bg4);color:var(--text);border-color:var(--border)}
+#tb-r{margin-left:auto;display:flex;align-items:center;gap:7px}
+.sst{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background .2s}
 .sdot.sv{background:var(--amber);animation:pulse .8s infinite}
 .sdot.er{background:var(--coral)}
-#add-btn{font-size:12px;padding:6px 13px;border-radius:var(--rs);background:var(--accent);color:#fff;font-weight:500}
+#add-btn{font-size:12px;padding:6px 14px;border-radius:var(--rs);background:var(--accent);color:#fff;font-weight:500}
 #add-btn:hover{background:var(--accent2)}
 
-/* ── LAYOUT ──────────────────────────────────────────────── */
-#main{flex:1;display:flex;overflow:hidden}
+/* ══ LAYOUT ══════════════════════════════════════════════════ */
+#main{flex:1;display:flex;overflow:hidden;position:relative}
 
-/* ── SIDEBAR ─────────────────────────────────────────────── */
-#sidebar{width:205px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+/* ══ SIDEBAR ═════════════════════════════════════════════════ */
+#sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;z-index:10}
 .sbhd{padding:10px 10px 3px;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase}
 #plist{flex:1;overflow-y:auto;padding:2px 5px 8px}
 .pi{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--rs);cursor:pointer;transition:background .1s}
 .pi:hover,.pi.on{background:var(--bg4)}
-.pidot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pidot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
 .piname{font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .pipct{font-size:10px;color:var(--text3)}
 
-/* ── MAP ─────────────────────────────────────────────────── */
-#map-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);background-image:radial-gradient(circle,var(--dot-grid) 1px,transparent 1px);background-size:26px 26px}
-#map-wrap svg{width:100%;height:100%;cursor:grab;display:block}
-#map-wrap svg.pan{cursor:grabbing}
-#map-ctrls{position:absolute;bottom:14px;left:14px;display:flex;gap:5px;align-items:center;z-index:10}
+/* ══ MAP ═════════════════════════════════════════════════════ */
+#map-wrap{flex:1;position:relative;overflow:hidden;
+  background-color:var(--bg);
+  background-image:radial-gradient(circle,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px}
+#map-wrap svg{width:100%;height:100%;display:block}
+#map-wrap svg.panning{cursor:grabbing}
+#map-ctrls{position:absolute;bottom:72px;left:14px;display:flex;gap:5px;align-items:center;z-index:10}
 .mcbtn{width:30px;height:30px;border-radius:var(--rs);background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:13px;display:flex;align-items:center;justify-content:center}
 .mcbtn:hover{background:var(--bg4);color:var(--text)}
-#zlbl{font-size:11px;color:var(--text3);padding:0 5px}
+#zlbl{font-size:11px;color:var(--text3);padding:0 5px;min-width:36px;text-align:center}
 #dep-btn{font-size:11px;padding:5px 10px;border-radius:var(--rs);background:var(--bg2);border:1px solid var(--border);color:var(--text2)}
 #dep-btn.on{background:var(--coral);color:#fff;border-color:var(--coral)}
-#dep-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--coral);color:#fff;font-size:12px;padding:6px 16px;border-radius:99px;display:none;white-space:nowrap;pointer-events:none;z-index:20}
+#dep-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--coral);color:#fff;font-size:12px;padding:7px 18px;border-radius:99px;display:none;pointer-events:none;z-index:20;white-space:nowrap}
 
-/* ── LIST VIEW ───────────────────────────────────────────── */
+/* drop target highlight */
+.drop-target-active{filter:drop-shadow(0 0 8px var(--accent)) !important}
+
+/* ══ LIST VIEW ═══════════════════════════════════════════════ */
 #list-view{flex:1;overflow-y:auto;padding:16px;display:none;flex-direction:column;gap:12px;animation:fadeUp .18s}
 #list-view.sh{display:flex}
 .lvc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
-.lvh{padding:11px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:background .1s}
+.lvh{padding:12px 14px;display:flex;align-items:center;gap:9px;cursor:pointer}
 .lvh:hover{background:var(--bg3)}
-.lvhd{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.lvhd{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .lvhn{font-size:14px;font-weight:600;flex:1;color:var(--text)}
 .lvhp{font-size:11px;color:var(--text3)}
 .lvch{font-size:10px;color:var(--text3);transition:transform .18s}
 .lvch.op{transform:rotate(90deg)}
 .lvb{display:none;padding:0 14px 10px;flex-direction:column;gap:1px}
 .lvb.op{display:flex}
-.lvtr{display:flex;align-items:center;gap:7px;padding:5px 2px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;color:var(--text)}
+.lvtr{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;color:var(--text)}
 .lvtr:last-child{border:none}
 .lvtr:hover{color:var(--accent)}
 .lvdone{text-decoration:line-through;color:var(--text3)}
-.lvsub{padding-left:18px;font-size:12px;color:var(--text2)}
+.lvsub{padding-left:18px;font-size:12px}
 
-/* ── SUMMARY ─────────────────────────────────────────────── */
+/* ══ SUMMARY VIEW ════════════════════════════════════════════ */
 #sum-view{flex:1;overflow-y:auto;padding:16px;display:none;flex-direction:column;gap:14px;animation:fadeUp .18s}
 #sum-view.sh{display:flex}
-.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.sum-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
-.sum-num{font-size:26px;font-weight:700;color:var(--accent)}
-.sum-lbl{font-size:11px;color:var(--text3);margin-top:3px}
-.sum-sec{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.sum-tasks{display:flex;flex-direction:column;gap:3px}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.scard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.snum{font-size:26px;font-weight:700;color:var(--accent)}
+.slbl{font-size:11px;color:var(--text3);margin-top:3px}
+.ssec{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.stasks{display:flex;flex-direction:column;gap:3px}
 .stask{display:flex;align-items:flex-start;gap:9px;padding:8px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer}
 .stask:hover{border-color:var(--border2)}
-.stask-lbl{flex:1;font-size:13px;color:var(--text)}
-.stask-meta{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.stlbl{flex:1;font-size:13px;color:var(--text)}
+.stmeta{display:flex;gap:5px;align-items:center;flex-shrink:0}
 .pchip{font-size:10px;padding:2px 6px;border-radius:99px;font-weight:600}
 .ph{background:rgba(248,113,113,.15);color:var(--coral)}
-.pm{background:rgba(245,158,11,.15);color:var(--amber)}
-.pl{background:rgba(62,207,142,.15);color:var(--green)}
+.pm{background:rgba(251,191,36,.15);color:var(--amber)}
+.pl{background:rgba(52,211,153,.15);color:var(--green)}
 .ctag{font-size:10px;color:var(--text3);padding:2px 6px;background:var(--bg4);border-radius:99px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dtag{font-size:10px;color:var(--text3)}
 .dtag.ov{color:var(--coral)}
 .dtag.sn{color:var(--amber)}
-.email-row{display:flex;gap:7px}
-.email-inp{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:8px 11px;color:var(--text);font-size:13px}
-.email-inp:focus{border-color:var(--accent)}
+.erow{display:flex;gap:7px}
+.einp{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:8px 11px;color:var(--text);font-size:13px}
+.einp:focus{border-color:var(--accent)}
 .esend{padding:8px 15px;background:var(--accent);color:#fff;border-radius:var(--rs);font-size:13px;font-weight:500}
 .esend:hover{background:var(--accent2)}
 
-/* ── PANEL ───────────────────────────────────────────────── */
-#panel{position:absolute;right:0;top:0;bottom:0;width:325px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);z-index:50}
-#panel.op{transform:translateX(0)}
-#ph2{padding:13px 13px 11px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px}
-#ph-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px}
+/* ══ DETAIL PANEL ════════════════════════════════════════════ */
+#panel{position:absolute;right:0;top:0;bottom:0;width:320px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);z-index:50;box-shadow:var(--shadow)}
+#panel.op{transform:none}
+#ph{padding:13px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px}
+#ph-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;margin-top:5px}
 #ph-ti{flex:1;font-size:15px;font-weight:600;background:transparent;border:none;color:var(--text);padding:0;line-height:1.4}
 #ph-ti:focus{outline:none;border-bottom:1px solid var(--accent)}
-#ph-x{width:23px;height:23px;background:var(--bg4);border-radius:var(--rs);color:var(--text2);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#ph-x{width:24px;height:24px;background:var(--bg4);border-radius:var(--rs);color:var(--text2);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 #ph-x:hover{color:var(--text)}
-#pb{flex:1;overflow-y:auto;padding:11px;display:flex;flex-direction:column;gap:11px}
+#pb{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
 .plbl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
-.ppr{display:flex;align-items:center;gap:7px}
+.ppr{display:flex;align-items:center;gap:8px}
 .ppt{flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
-.ppf{height:100%;border-radius:2px;transition:width .3s}
+.ppf{height:100%;border-radius:2px;transition:width .35s}
 .ppp{font-size:11px;color:var(--text2);min-width:28px;text-align:right}
-.pnotes{width:100%;min-height:60px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:7px 9px;color:var(--text);font-size:12px;resize:vertical;line-height:1.5}
+.pnotes{width:100%;min-height:60px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px;color:var(--text);font-size:12px;resize:vertical;line-height:1.5}
 .pnotes:focus{border-color:var(--accent)}
 .ttree{display:flex;flex-direction:column;gap:3px}
 .ttrow{display:flex;align-items:center;gap:6px;padding:6px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);transition:border-color .1s}
@@ -162,7 +153,7 @@ input,textarea,select{font-family:var(--font);outline:none}
 .ttcb{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--border2);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .ttcb.on{background:var(--green);border-color:var(--green)}
 .ttcb.on::after{content:'✓';font-size:7px;color:#fff}
-.ttlbl{flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+.ttlbl{flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
 .ttdone .ttlbl{text-decoration:line-through;color:var(--text3)}
 .ttpc{font-size:9px;padding:1px 5px;border-radius:99px;font-weight:600;flex-shrink:0}
 .ttdate{font-size:10px;color:var(--text3);flex-shrink:0}
@@ -178,14 +169,14 @@ input,textarea,select{font-family:var(--font);outline:none}
 .ati:focus{border-color:var(--accent)}
 .atb{padding:6px 11px;background:var(--accent);color:#fff;border-radius:var(--rs);font-size:12px;font-weight:500}
 .atb:hover{background:var(--accent2)}
-#pf{padding:9px 11px;border-top:1px solid var(--border);display:flex;gap:6px}
+#pf{padding:9px 12px;border-top:1px solid var(--border);display:flex;gap:6px}
 .pdel{font-size:11px;padding:6px 11px;background:rgba(248,113,113,.1);color:var(--coral);border-radius:var(--rs);border:1px solid rgba(248,113,113,.2)}
 .pdel:hover{background:rgba(248,113,113,.2)}
 
-/* ── MODALS ──────────────────────────────────────────────── */
-.mbk{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(3px)}
+/* ══ MODALS ══════════════════════════════════════════════════ */
+.mbk{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
 .mbk.op{display:flex}
-.mbox{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:22px;width:460px;max-width:95vw;display:flex;flex-direction:column;gap:13px;animation:fadeUp .16s}
+.mbox{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:22px;width:460px;max-width:95vw;display:flex;flex-direction:column;gap:13px;animation:fadeUp .16s;box-shadow:var(--shadow)}
 .mbox h2{font-size:17px;font-weight:700;color:var(--text)}
 .mbox p{font-size:13px;color:var(--text2);line-height:1.6}
 .mbox a{color:var(--accent)}
@@ -200,7 +191,7 @@ input,textarea,select{font-family:var(--font);outline:none}
 .mcan{padding:7px 13px;background:var(--bg4);color:var(--text2);border-radius:var(--rs);font-size:13px;border:1px solid var(--border)}
 .mdel{padding:7px 13px;background:rgba(248,113,113,.1);color:var(--coral);border-radius:var(--rs);font-size:13px;border:1px solid rgba(248,113,113,.2);margin-right:auto}
 .crow{display:flex;gap:6px;flex-wrap:wrap}
-.cs{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.cs{width:20px;height:20px;border-radius:4px;cursor:pointer;border:2px solid transparent}
 .cs.sel{border-color:var(--text)}
 .slist{background:var(--bg3);border-radius:var(--rs);padding:9px 9px 9px 22px;display:flex;flex-direction:column;gap:3px}
 .slist li{font-size:12px;color:var(--text2);line-height:1.8}
@@ -212,80 +203,77 @@ input,textarea,select{font-family:var(--font);outline:none}
 .dcb{width:12px;height:12px;border-radius:2px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .ditem.lk .dcb{background:var(--accent);border-color:var(--accent)}
 .ditem.lk .dcb::after{content:'✓';font-size:7px;color:#fff}
-.theme-row{display:flex;gap:8px;flex-wrap:wrap}
-.to{width:34px;height:34px;border-radius:50%;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:16px;transition:border-color .12s}
-.to:hover{border-color:var(--text2)}
-.to.sel{border-color:var(--text)}
 
-/* ── TOAST ───────────────────────────────────────────────── */
-#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:8px 16px;font-size:13px;color:var(--text);z-index:500;transition:transform .2s;pointer-events:none}
-#toast.sh{transform:translateX(-50%) translateY(0)}
+/* ══ AI PANEL ════════════════════════════════════════════════ */
+#ai-panel{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:440px;background:var(--bg2);border:1px solid var(--border2);border-bottom:none;border-radius:var(--rl) var(--rl) 0 0;display:flex;flex-direction:column;z-index:40;transition:height .25s cubic-bezier(.4,0,.2,1);height:44px;overflow:hidden;box-shadow:0 -4px 24px rgba(0,0,0,.25)}
+#ai-panel.op{height:500px}
+#ai-hd{height:44px;display:flex;align-items:center;padding:0 14px;gap:10px;cursor:pointer;flex-shrink:0;border-bottom:1px solid transparent;transition:border-color .2s}
+#ai-panel.op #ai-hd{border-bottom-color:var(--border)}
+.ai-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#e879f9);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+#ai-ttl{font-size:13px;font-weight:600;color:var(--text);flex:1}
+#ai-sub{font-size:11px;color:var(--text3)}
+#ai-tog{font-size:10px;color:var(--text3);padding:3px 7px;border-radius:var(--rs);background:var(--bg4);border:1px solid var(--border)}
+#ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{display:flex;flex-direction:column;gap:3px;animation:fadeUp .18s}
+.ai-msg.usr{align-items:flex-end}
+.ai-msg.bot{align-items:flex-start}
+.ai-bub{max-width:90%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.55}
+.ai-msg.usr .ai-bub{background:var(--accent);color:#fff;border-radius:12px 12px 3px 12px}
+.ai-msg.bot .ai-bub{background:var(--bg3);color:var(--text);border-radius:12px 12px 12px 3px;border:1px solid var(--border)}
+.ai-bub strong{font-weight:600}
+.ai-bub ul{padding-left:16px;margin-top:4px}
+.ai-bub li{font-size:12px;margin-top:2px}
+.ai-time{font-size:10px;color:var(--text3)}
+.ai-typ{display:flex;align-items:center;gap:4px;padding:10px 12px;background:var(--bg3);border-radius:12px 12px 12px 3px;border:1px solid var(--border);width:fit-content}
+.ai-typ span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:bounce .9s infinite}
+.ai-typ span:nth-child(2){animation-delay:.15s}
+.ai-typ span:nth-child(3){animation-delay:.3s}
+.ai-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+.ai-chip{font-size:11px;padding:4px 9px;border-radius:99px;background:var(--bg4);border:1px solid var(--border);color:var(--text2);cursor:pointer;white-space:nowrap}
+.ai-chip:hover{background:var(--accent-lo);border-color:var(--accent);color:var(--accent)}
+.ai-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:99px;background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.2);margin-top:3px}
+/* suggest link chips */
+.link-suggest{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:9px 11px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-top:4px}
+.link-yes{padding:3px 10px;background:var(--accent);color:#fff;border-radius:99px;font-size:11px;font-weight:500}
+.link-yes:hover{background:var(--accent2)}
+.link-no{padding:3px 8px;background:transparent;color:var(--text3);border-radius:99px;font-size:11px;border:1px solid var(--border)}
+#ai-key-row{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-shrink:0}
+.ai-ki{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:6px 9px;color:var(--text);font-size:12px}
+.ai-ki:focus{border-color:var(--accent);outline:none}
+.ai-kb{padding:6px 11px;background:var(--accent);color:#fff;border-radius:var(--rs);font-size:12px;font-weight:500}
+.ai-kb:hover{background:var(--accent2)}
+#ai-inp-row{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:7px;flex-shrink:0}
+#ai-inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;color:var(--text);font-size:13px;resize:none;min-height:34px;max-height:90px;overflow-y:auto;line-height:1.4}
+#ai-inp:focus{border-color:var(--accent);outline:none}
+#ai-send{width:34px;height:34px;border-radius:var(--rs);background:var(--accent);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-end}
+#ai-send:hover{background:var(--accent2)}
+#ai-send:disabled{opacity:.4;cursor:not-allowed}
 
-/* SVG text */
-.nl{font-family:'Inter',system-ui,sans-serif;font-weight:600}
-.ns{font-family:'Inter',system-ui,sans-serif}
-.tl{font-family:'Inter',system-ui,sans-serif}
+/* ══ TOAST ═══════════════════════════════════════════════════ */
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--bg4);border:1px solid var(--border2);border-radius:var(--r);padding:8px 16px;font-size:13px;color:var(--text);z-index:500;transition:transform .2s,opacity .2s;pointer-events:none;opacity:0}
+#toast.sh{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* SVG fonts */
+.nf{font-family:'Inter',system-ui,sans-serif}
 
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-
-/* ── AI CHAT PANEL ───────────────────────────────────────── */
-#ai-panel{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:420px;background:var(--bg2);border:1px solid var(--border2);border-bottom:none;border-radius:var(--rl) var(--rl) 0 0;display:flex;flex-direction:column;z-index:40;transition:height .25s cubic-bezier(.4,0,.2,1);height:44px;overflow:hidden;box-shadow:0 -4px 24px rgba(0,0,0,.2)}
-#ai-panel.open{height:500px}
-#ai-header{height:44px;display:flex;align-items:center;padding:0 14px;gap:10px;cursor:pointer;flex-shrink:0;border-bottom:1px solid transparent;transition:border-color .2s}
-#ai-panel.open #ai-header{border-bottom-color:var(--border)}
-.ai-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#e879f9);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
-#ai-title{font-size:13px;font-weight:600;color:var(--text);flex:1}
-#ai-subtitle{font-size:11px;color:var(--text3)}
-#ai-toggle{font-size:11px;color:var(--text3);padding:3px 7px;border-radius:var(--rs);background:var(--bg4);border:1px solid var(--border)}
-#ai-toggle:hover{color:var(--text)}
-#ai-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.ai-msg{display:flex;flex-direction:column;gap:4px;animation:fadeUp .18s}
-.ai-msg.user{align-items:flex-end}
-.ai-msg.ai{align-items:flex-start}
-.ai-bubble{max-width:88%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.55}
-.ai-msg.user .ai-bubble{background:var(--accent);color:#fff;border-radius:12px 12px 3px 12px}
-.ai-msg.ai .ai-bubble{background:var(--bg3);color:var(--text);border-radius:12px 12px 12px 3px;border:1px solid var(--border)}
-.ai-bubble strong{font-weight:600}
-.ai-bubble ul{padding-left:16px;margin-top:4px;display:flex;flex-direction:column;gap:2px}
-.ai-bubble li{font-size:12px}
-.ai-time{font-size:10px;color:var(--text3)}
-.ai-typing{display:flex;align-items:center;gap:4px;padding:10px 12px;background:var(--bg3);border-radius:12px 12px 12px 3px;border:1px solid var(--border);width:fit-content}
-.ai-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:bounce .9s infinite}
-.ai-typing span:nth-child(2){animation-delay:.15s}
-.ai-typing span:nth-child(3){animation-delay:.3s}
-@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
-.ai-action-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
-.ai-chip{font-size:11px;padding:4px 9px;border-radius:99px;background:var(--bg4);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap}
-.ai-chip:hover{background:var(--accent-lo);border-color:var(--accent);color:var(--accent)}
-#ai-input-row{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:7px;flex-shrink:0}
-#ai-inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:8px 11px;color:var(--text);font-size:13px;resize:none;min-height:36px;max-height:100px;overflow-y:auto}
-#ai-inp:focus{border-color:var(--accent);outline:none}
-#ai-send{width:36px;height:36px;border-radius:var(--rs);background:var(--accent);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-end}
-#ai-send:hover{background:var(--accent2)}
-#ai-send:disabled{opacity:.4;cursor:not-allowed}
-.ai-key-row{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-shrink:0}
-.ai-key-inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:6px 9px;color:var(--text);font-size:12px}
-.ai-key-inp:focus{border-color:var(--accent);outline:none}
-.ai-key-btn{padding:6px 11px;background:var(--accent);color:#fff;border-radius:var(--rs);font-size:12px;font-weight:500}
-.ai-key-btn:hover{background:var(--accent2)}
-.ai-result-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:99px;background:rgba(62,207,142,.12);color:var(--green);border:1px solid rgba(62,207,142,.2);margin-top:4px}
 </style>
 </head>
 <body>
 
 <div id="topbar">
-  <div id="logo">Work<em>Map</em></div>
-  <button class="tbtn active" id="btn-map" onclick="sw('map')">Map</button>
+  <div id="logo">WorkMap</div>
+  <button class="tbtn on" id="btn-map" onclick="sw('map')">Map</button>
   <button class="tbtn" id="btn-list" onclick="sw('list')">List</button>
   <button class="tbtn" id="btn-sum" onclick="sw('summary')">Summary</button>
-  <div id="tb-right">
-    <button id="dep-btn" class="tbtn" onclick="togDepMode()">🔗 Link</button>
+  <div id="tb-r">
+    <button id="dep-btn" class="tbtn" onclick="togDep()">🔗 Link</button>
     <button class="tbtn" onclick="openMod('theme-mod')">🎨</button>
     <button class="tbtn" id="setup-btn" style="display:none" onclick="openMod('setup-mod')">⚙ DB</button>
     <button id="add-btn" onclick="openNewC()">+ Cluster</button>
-    <div class="sstatus"><div class="sdot" id="sdot"></div><span id="stxt">Saved</span></div>
+    <div class="sst"><div class="sdot" id="sdot"></div><span id="stxt">Saved</span></div>
   </div>
 </div>
 
@@ -296,47 +284,48 @@ input,textarea,select{font-family:var(--font);outline:none}
   </div>
 
   <div id="map-wrap">
-    <svg id="graph"></svg>
+    <svg id="graph" style="cursor:grab"></svg>
     <div id="map-ctrls">
       <button class="mcbtn" onclick="dz(1.15)">+</button>
       <span id="zlbl">100%</span>
       <button class="mcbtn" onclick="dz(1/1.15)">−</button>
       <button class="mcbtn" onclick="rv()">⊙</button>
+      <button id="dep-btn2" class="mcbtn tbtn" onclick="togDep()" title="Link mode" style="width:auto;padding:0 8px;font-size:11px">🔗</button>
     </div>
-    <div id="dep-hint">Click first task → then second task to link</div>
+    <div id="dep-hint">Click first task → then second task to link them</div>
   </div>
 
   <div id="list-view"></div>
   <div id="sum-view"></div>
 
   <div id="panel">
-    <div id="ph2">
+    <div id="ph">
       <div id="ph-dot"></div>
-      <input id="ph-ti" onchange="updCTitle(this.value)">
-      <button id="ph-x" onclick="closePanel()">✕</button>
+      <input id="ph-ti" onchange="updCTi(this.value)">
+      <button id="ph-x" onclick="closeP()">✕</button>
     </div>
     <div id="pb"></div>
     <div id="pf"><button class="pdel" onclick="delC()">Delete cluster</button></div>
   </div>
 </div>
 
-<!-- SETUP -->
+<!-- SETUP MODAL -->
 <div class="mbk" id="setup-mod">
   <div class="mbox">
     <h2>Connect database</h2>
-    <p>Link <strong>Supabase</strong> (free) so WorkMap syncs across all your devices.</p>
+    <p>Sync to <strong>Supabase</strong> (free) so WorkMap works across all your devices.</p>
     <ol class="slist">
       <li>Go to <a href="https://supabase.com" target="_blank">supabase.com</a> → New project</li>
       <li>SQL Editor → run setup SQL <button onclick="cpSql()" style="font-size:11px;padding:2px 8px;background:var(--bg4);border:1px solid var(--border);border-radius:4px;color:var(--accent)">Copy SQL</button></li>
-      <li>Project Settings → API → copy URL &amp; anon key</li>
+      <li>Settings → API → copy URL &amp; anon key</li>
     </ol>
-    <textarea id="sql-hidden" style="display:none">create table if not exists workmap_data (
+    <textarea id="sql-txt" style="display:none">create table if not exists workmap_data (
   id text primary key default 'main',
   data jsonb not null,
   updated_at timestamptz default now()
 );
 insert into workmap_data (id, data)
-values ('main', '{"clusters":[],"deps":[]}'::jsonb)
+values ('main', '{"clusters":[],"deps":[],"diagrams":[]}'::jsonb)
 on conflict (id) do nothing;</textarea>
     <div class="mf"><label>Supabase URL</label><input id="sb-url" type="url" placeholder="https://xxxx.supabase.co"></div>
     <div class="mf"><label>Anon Key</label><input id="sb-key" type="password" placeholder="eyJhbGci..."></div>
@@ -347,13 +336,13 @@ on conflict (id) do nothing;</textarea>
   </div>
 </div>
 
-<!-- NEW CLUSTER -->
+<!-- NEW CLUSTER MODAL -->
 <div class="mbk" id="nc-mod">
   <div class="mbox">
     <h2>New cluster</h2>
     <div class="mf"><label>Name</label><input id="nc-n" onkeydown="if(event.key==='Enter')saveC()"></div>
-    <div class="mf"><label>Color</label><div class="crow" id="nc-colors"></div></div>
-    <div class="mf"><label>Notes</label><input id="nc-notes" placeholder="Optional..."></div>
+    <div class="mf"><label>Color</label><div class="crow" id="nc-clrs"></div></div>
+    <div class="mf"><label>Notes</label><input id="nc-notes" placeholder="Optional context..."></div>
     <div class="mbtns">
       <button class="mcan" onclick="closeMod('nc-mod')">Cancel</button>
       <button class="msave" onclick="saveC()">Create</button>
@@ -361,7 +350,7 @@ on conflict (id) do nothing;</textarea>
   </div>
 </div>
 
-<!-- TASK EDIT -->
+<!-- TASK EDIT MODAL -->
 <div class="mbk" id="te-mod">
   <div class="mbox">
     <h2 id="te-h">Edit task</h2>
@@ -372,12 +361,9 @@ on conflict (id) do nothing;</textarea>
       </div>
       <div class="mf"><label>Due date</label><input id="te-due" type="date"></div>
     </div>
-    <div class="mf"><label>Move to (cluster or parent task)</label><select id="te-mv"></select></div>
+    <div class="mf"><label>Move to (cluster or under a task)</label><select id="te-mv"></select></div>
     <div class="mf"><label>Notes</label><textarea id="te-notes" style="min-height:55px;resize:vertical"></textarea></div>
-    <div class="mf">
-      <label>Dependencies — link to any task</label>
-      <div class="deplist" id="te-deps"></div>
-    </div>
+    <div class="mf"><label>Dependencies</label><div class="deplist" id="te-deps"></div></div>
     <div class="mbtns">
       <button class="mdel" onclick="delT()">Delete</button>
       <button class="mcan" onclick="closeMod('te-mod')">Cancel</button>
@@ -386,48 +372,48 @@ on conflict (id) do nothing;</textarea>
   </div>
 </div>
 
-<!-- THEME -->
+<!-- THEME MODAL -->
 <div class="mbk" id="theme-mod">
-  <div class="mbox" style="width:280px">
+  <div class="mbox" style="width:260px">
     <h2>Theme</h2>
-    <div class="theme-row">
-      <div class="to" style="background:#0f0f11" onclick="setTheme('dark')" title="Dark">🌙</div>
-      <div class="to" style="background:#f4f3ee" onclick="setTheme('light')" title="Light">☀️</div>
-      <div class="to" style="background:#faf6ee" onclick="setTheme('warm')" title="Warm">🍂</div>
-      <div class="to" style="background:#181e2e" onclick="setTheme('slate')" title="Slate">🌊</div>
+    <div style="display:flex;gap:10px">
+      <div onclick="setTh('dark')" style="flex:1;padding:14px;border-radius:var(--r);background:#0d0d0f;border:2px solid var(--border);cursor:pointer;text-align:center;font-size:12px;color:#f0f0f8">🌙 Dark</div>
+      <div onclick="setTh('light')" style="flex:1;padding:14px;border-radius:var(--r);background:#f0ede8;border:2px solid #d0cac0;cursor:pointer;text-align:center;font-size:12px;color:#1a1814">☀️ Light</div>
     </div>
     <div class="mbtns"><button class="mcan" onclick="closeMod('theme-mod')">Close</button></div>
   </div>
 </div>
 
-<div id="toast"></div>
-
-<!-- ══ AI CHAT PANEL ══ -->
+<!-- AI PANEL -->
 <div id="ai-panel">
-  <div id="ai-header" onclick="togAI()">
-    <div class="ai-avatar">&#10022;</div>
-    <div id="ai-title">WorkMap AI</div>
-    <div id="ai-subtitle">Click to open</div>
-    <button id="ai-toggle">&#9650;</button>
+  <div id="ai-hd" onclick="togAI()">
+    <div class="ai-av">✦</div>
+    <div id="ai-ttl">WorkMap AI</div>
+    <div id="ai-sub">Click to open</div>
+    <button id="ai-tog">▲</button>
   </div>
-  <div id="ai-messages"></div>
+  <div id="ai-msgs"></div>
   <div id="ai-key-row">
-    <input class="ai-key-inp" id="ai-key-inp" type="password" placeholder="Paste your Anthropic API key (sk-ant-...)">
-    <button class="ai-key-btn" onclick="saveAIKey()">Connect</button>
+    <input class="ai-ki" id="ai-ki" type="password" placeholder="Paste Anthropic API key (sk-ant-...)">
+    <button class="ai-kb" onclick="saveKey()">Connect</button>
   </div>
-  <div id="ai-input-row">
-    <textarea id="ai-inp" placeholder="Describe tasks, ask for briefing, or ask to suggest subtasks..." onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();sendAI()}" rows="1" oninput="this.style.height='36px';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button id="ai-send" onclick="sendAI()">&#8593;</button>
+  <div id="ai-inp-row">
+    <textarea id="ai-inp" placeholder="Describe work, ask for briefing, say 'draw a flowchart of approval process'…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI()}" rows="1" oninput="this.style.height='34px';this.style.height=Math.min(this.scrollHeight,90)+'px'"></textarea>
+    <button id="ai-send" onclick="sendAI()">↑</button>
   </div>
 </div>
 
+<div id="toast"></div>
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// PALETTE
+// PALETTE & CONSTANTS
 // ══════════════════════════════════════════════════════════════
-const PAL={purple:'#7c6af7',teal:'#2dd4bf',amber:'#f59e0b',coral:'#f87171',
-  green:'#3ecf8e',blue:'#60a5fa',pink:'#e879f9',orange:'#fb923c',rose:'#fb7185',cyan:'#22d3ee'};
+const PAL={
+  purple:'#7c6af7',teal:'#2dd4bf',amber:'#fbbf24',coral:'#f87171',
+  green:'#34d399',blue:'#60a5fa',pink:'#e879f9',orange:'#fb923c',
+  rose:'#fb7185',cyan:'#22d3ee'
+};
 const PK=Object.keys(PAL);
 
 // ══════════════════════════════════════════════════════════════
@@ -442,20 +428,32 @@ async function loadSB(){
   if(!SB)return false;
   try{const{data,error}=await SB.from('workmap_data').select('data').eq('id','main').single();
     if(error)throw error;
-    if(data?.data){S.cl=data.data.clusters||[];S.deps=data.data.deps||[];return true;}}
-  catch(e){console.error(e);}return false;
+    if(data?.data){
+      S.cl=data.data.clusters||[];
+      S.deps=data.data.deps||[];
+      S.diagrams=data.data.diagrams||[];
+      return true;
+    }}catch(e){console.error(e);}return false;
 }
 async function saveSB(){
   setSt('sv');
   try{
-    if(SB){const{error}=await SB.from('workmap_data').upsert({id:'main',data:{clusters:S.cl,deps:S.deps},updated_at:new Date().toISOString()});if(error)throw error;}
+    if(SB){const{error}=await SB.from('workmap_data').upsert({
+      id:'main',
+      data:{clusters:S.cl,deps:S.deps,diagrams:S.diagrams},
+      updated_at:new Date().toISOString()
+    });if(error)throw error;}
     saveL();setSt('ok');
   }catch(e){setSt('er');saveL();}
 }
-function saveL(){localStorage.setItem('wm_d',JSON.stringify({clusters:S.cl,deps:S.deps}));}
-function loadL(){try{const d=JSON.parse(localStorage.getItem('wm_d')||'{}');S.cl=d.clusters||[];S.deps=d.deps||[];return true;}catch(e){return false;}}
+function saveL(){localStorage.setItem('wm_d',JSON.stringify({clusters:S.cl,deps:S.deps,diagrams:S.diagrams}));}
+function loadL(){
+  try{const d=JSON.parse(localStorage.getItem('wm_d')||'{}');
+    S.cl=d.clusters||[];S.deps=d.deps||[];S.diagrams=d.diagrams||[];return true;}
+  catch(e){return false;}
+}
 let svT;
-function sched(){clearTimeout(svT);svT=setTimeout(saveSB,700);}
+function sched(){clearTimeout(svT);svT=setTimeout(saveSB,800);}
 function setSt(s){
   document.getElementById('sdot').className='sdot'+(s==='sv'?' sv':s==='er'?' er':'');
   document.getElementById('stxt').textContent=s==='sv'?'Saving…':s==='er'?'Error':'Saved';
@@ -464,65 +462,92 @@ function setSt(s){
 // ══════════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════════
-const S={cl:[],deps:[],sel:null,view:'map',zoom:1,pan:{x:0,y:0},root:{x:0,y:0},depMode:false,depFirst:null};
+const S={
+  cl:[],deps:[],diagrams:[],
+  sel:null,view:'map',
+  zoom:1,pan:{x:0,y:0},
+  depMode:false,depFirst:null,
+  dragNode:null  // {type:'cluster'|'task'|'diagram', id, parentId, clusterId}
+};
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function gc(id){return S.cl.find(c=>c.id===id);}
-function findT(tid){for(const c of S.cl){const r=findInTree(c.tasks,tid,null);if(r)return{...r,cluster:c};}return null;}
-function findInTree(tasks,tid,par){for(const t of tasks||[]){if(t.id===tid)return{task:t,parent:par};const r=findInTree(t.children,tid,t);if(r)return r;}return null;}
+function findT(tid){
+  for(const c of S.cl){const r=findInTree(c.tasks,tid,null);if(r)return{...r,cluster:c};}return null;
+}
+function findInTree(tasks,tid,par){
+  for(const t of tasks||[]){
+    if(t.id===tid)return{task:t,parent:par};
+    const r=findInTree(t.children,tid,t);if(r)return r;
+  }return null;
+}
 function allT(){const o=[];S.cl.forEach(c=>flatT(c.tasks,c,o));return o;}
-function flatT(tasks,cl,o,depth=0){(tasks||[]).forEach(t=>{t._cl=cl;o.push({...t,_cl:cl,_depth:depth});flatT(t.children,cl,o,depth+1);});}
+function flatT(tasks,cl,o,d=0){
+  (tasks||[]).forEach(t=>{t._cl=cl;o.push({...t,_cl:cl,_d:d});flatT(t.children,cl,o,d+1);});
+}
 function countT(tasks){let d=0,t=0;(tasks||[]).forEach(tk=>{t++;if(tk.done)d++;const r=countT(tk.children);d+=r.d;t+=r.t;});return{d,t};}
+function ensureC(tasks){(tasks||[]).forEach(t=>{if(!t.children)t.children=[];if(t.x===undefined)t.x=null;if(t.y===undefined)t.y=null;ensureC(t.children);});}
 
 // ══════════════════════════════════════════════════════════════
 // SETUP
 // ══════════════════════════════════════════════════════════════
-function cpSql(){navigator.clipboard.writeText(document.getElementById('sql-hidden').value);toast('SQL copied');}
-function skipSetup(){closeMod('setup-mod');document.getElementById('setup-btn').style.display='flex';toast('Using local storage only');}
+function cpSql(){navigator.clipboard.writeText(document.getElementById('sql-txt').value);toast('SQL copied');}
+function skipSetup(){closeMod('setup-mod');document.getElementById('setup-btn').style.display='flex';toast('Using local storage');}
 async function doSetup(){
   const url=document.getElementById('sb-url').value.trim(),key=document.getElementById('sb-key').value.trim();
   if(!url||!key){toast('Fill both fields');return;}
   localStorage.setItem('wm_sb',JSON.stringify({url,key}));
   SB=supabase.createClient(url,key);
   if(await loadSB()){closeMod('setup-mod');toast('Connected ✓');render();}
-  else toast('Failed — check your URL and key');
+  else toast('Failed — check URL and key');
 }
 
 // ══════════════════════════════════════════════════════════════
-// CLUSTER
+// CLUSTER CRUD
 // ══════════════════════════════════════════════════════════════
 let ncCol=PK[0];
 function openNewC(){
   ncCol=PK[Math.floor(Math.random()*PK.length)];
-  const cp=document.getElementById('nc-colors');
+  const cp=document.getElementById('nc-clrs');
   cp.innerHTML=PK.map(k=>`<div class="cs${k===ncCol?' sel':''}" style="background:${PAL[k]}" onclick="selNC('${k}',this)"></div>`).join('');
   document.getElementById('nc-n').value='';
   document.getElementById('nc-notes').value='';
   openMod('nc-mod');setTimeout(()=>document.getElementById('nc-n').focus(),60);
 }
-function selNC(k,el){ncCol=k;document.querySelectorAll('#nc-colors .cs').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');}
+function selNC(k,el){ncCol=k;document.querySelectorAll('#nc-clrs .cs').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');}
 function saveC(){
   const name=document.getElementById('nc-n').value.trim();if(!name){toast('Give it a name');return;}
-  const a=(S.cl.length*137.5)*Math.PI/180,r=200+(S.cl.length%3)*50;
-  S.cl.push({id:uid(),label:name,color:ncCol,notes:document.getElementById('nc-notes').value.trim(),
-    x:S.root.x+Math.cos(a)*r,y:S.root.y+Math.sin(a)*r,tasks:[]});
+  // scatter placement — golden angle spiral from canvas center
+  const W=document.getElementById('map-wrap').clientWidth||800;
+  const H=document.getElementById('map-wrap').clientHeight||550;
+  const ang=(S.cl.length*137.5)*Math.PI/180, r=180+(S.cl.length%4)*60;
+  S.cl.push({
+    id:uid(),label:name,color:ncCol,
+    notes:document.getElementById('nc-notes').value.trim(),
+    x:W/2+Math.cos(ang)*r, y:H/2+Math.sin(ang)*r,
+    tasks:[]
+  });
   closeMod('nc-mod');render();sched();
 }
 
 // ══════════════════════════════════════════════════════════════
 // PANEL
 // ══════════════════════════════════════════════════════════════
-function openPanel(cid){
+function openP(cid){
   S.sel=cid;const c=gc(cid);
   document.getElementById('ph-dot').style.background=PAL[c.color]||c.color;
   document.getElementById('ph-ti').value=c.label;
-  renderP();renderSB2();
+  renderPB();renderSB();
   document.getElementById('panel').classList.add('op');
 }
-function closePanel(){S.sel=null;document.getElementById('panel').classList.remove('op');renderSB2();}
-function updCTitle(v){if(!S.sel)return;gc(S.sel).label=v;render();sched();}
-function delC(){if(!S.sel||!confirm('Delete cluster?'))return;S.cl=S.cl.filter(c=>c.id!==S.sel);closePanel();render();sched();}
+function closeP(){S.sel=null;document.getElementById('panel').classList.remove('op');renderSB();}
+function updCTi(v){if(!S.sel)return;gc(S.sel).label=v;render();sched();}
+function delC(){
+  if(!S.sel||!confirm('Delete cluster and all its tasks?'))return;
+  S.cl=S.cl.filter(c=>c.id!==S.sel);
+  closeP();render();sched();
+}
 
-function renderP(){
+function renderPB(){
   const c=gc(S.sel);if(!c)return;
   const col=PAL[c.color]||c.color,{d,t}=countT(c.tasks),pct=t?Math.round(d/t*100):0;
   document.getElementById('pb').innerHTML=`
@@ -532,25 +557,23 @@ function renderP(){
     </div>
     <div>
       <div class="plbl">Notes</div>
-      <textarea class="pnotes" onchange="updCNotes(this.value)">${esc(c.notes||'')}</textarea>
+      <textarea class="pnotes" onchange="updCN(this.value)">${esc(c.notes||'')}</textarea>
     </div>
     <div>
       <div class="plbl">Tasks <span style="color:var(--text3);font-weight:400">${d}/${t}</span></div>
-      <div class="ttree">${renderTTree(c.tasks,c.id)}</div>
+      <div class="ttree">${renderTT(c.tasks,c.id)}</div>
       <div class="atwrap">
         <input class="ati" id="ati" placeholder="Add task…" onkeydown="if(event.key==='Enter')addRT()">
         <button class="atb" onclick="addRT()">Add</button>
       </div>
     </div>`;
 }
-
-function renderTTree(tasks,cid){
-  return (tasks||[]).map(t=>{
-    const now=new Date();now.setHours(0,0,0,0);
+function renderTT(tasks,cid){
+  const now=new Date();now.setHours(0,0,0,0);
+  return(tasks||[]).map(t=>{
     let dc='ttdate',ds='';
     if(t.due){const d2=new Date(t.due);d2.setHours(0,0,0,0);const df=Math.round((d2-now)/86400000);ds=t.due;dc='ttdate'+(df<0?' ov':df<=3?' sn':'');}
     const nd=S.deps.filter(d=>d.from===t.id||d.to===t.id).length;
-    const ch=t.children?.length||0;
     return `<div>
       <div class="ttrow${t.done?' ttdone':''}">
         <div class="ttcb${t.done?' on':''}" onclick="togT('${cid}','${t.id}')"></div>
@@ -558,38 +581,36 @@ function renderTTree(tasks,cid){
         ${t.priority?`<span class="ttpc p${t.priority[0]}">${t.priority==='high'?'↑':t.priority==='mid'?'→':'↓'}</span>`:''}
         ${ds?`<span class="${dc}">${ds}</span>`:''}
         ${nd?`<span class="ttdep">🔗${nd}</span>`:''}
-        ${t.notes?`<span style="font-size:9px;color:var(--text3)" title="${esc(t.notes)}">📝</span>`:''}
+        ${t.notes?`<span style="font-size:9px;color:var(--text3)">📝</span>`:''}
         <div class="ttacts">
           <button class="ttab" onclick="addSub('${cid}','${t.id}')" title="Add subtask">+</button>
           <button class="ttab" onclick="openTE('${cid}','${t.id}')" title="Edit">✎</button>
         </div>
       </div>
-      ${ch?`<div class="ttind">${renderTTree(t.children,cid)}</div>`:''}
+      ${t.children?.length?`<div class="ttind">${renderTT(t.children,cid)}</div>`:''}
     </div>`;
   }).join('');
 }
-
-function updCNotes(v){if(!S.sel)return;gc(S.sel).notes=v;sched();}
-
+function updCN(v){if(!S.sel)return;gc(S.sel).notes=v;sched();}
 function addRT(){
-  const inp=document.getElementById('ati'),label=inp.value.trim();if(!label)return;
-  gc(S.sel).tasks.push({id:uid(),label,done:false,priority:'',due:'',notes:'',children:[]});
-  inp.value='';renderP();render();sched();
+  const inp=document.getElementById('ati'),lbl=inp.value.trim();if(!lbl)return;
+  gc(S.sel).tasks.push({id:uid(),label:lbl,done:false,priority:'',due:'',notes:'',children:[],x:null,y:null});
+  inp.value='';renderPB();render();sched();
 }
 function addSub(cid,pid){
-  const label=prompt('Subtask name:');if(!label)return;
+  const lbl=prompt('Subtask:');if(!lbl)return;
   const r=findInTree(gc(cid).tasks,pid,null);if(!r)return;
   if(!r.task.children)r.task.children=[];
-  r.task.children.push({id:uid(),label,done:false,priority:'',due:'',notes:'',children:[]});
-  renderP();render();sched();
+  r.task.children.push({id:uid(),label:lbl,done:false,priority:'',due:'',notes:'',children:[],x:null,y:null});
+  renderPB();render();sched();
 }
 function togT(cid,tid){
   const r=findInTree(gc(cid).tasks,tid,null);if(!r)return;
-  r.task.done=!r.task.done;renderP();render();renderSB2();sched();
+  r.task.done=!r.task.done;renderPB();render();renderSB();sched();
 }
 
 // ══════════════════════════════════════════════════════════════
-// TASK EDIT
+// TASK EDIT MODAL
 // ══════════════════════════════════════════════════════════════
 let teCtx=null;
 function openTE(cid,tid){
@@ -598,26 +619,24 @@ function openTE(cid,tid){
   document.getElementById('te-due').value=r.task.due||'';
   document.getElementById('te-pri').value=r.task.priority||'';
   document.getElementById('te-notes').value=r.task.notes||'';
-  document.getElementById('te-h').textContent='Edit: '+r.task.label.slice(0,28);
-  // move options
+  document.getElementById('te-h').textContent='Edit: '+r.task.label.slice(0,30);
   const sel=document.getElementById('te-mv');
   const opts=[`<option value="cl:${cid}">Root of: ${gc(cid).label}</option>`];
   S.cl.forEach(c=>{if(c.id!==cid)opts.push(`<option value="cl:${c.id}">Root of: ${c.label}</option>`);});
-  allT().forEach(at=>{if(at.id!==tid)opts.push(`<option value="ch:${at._cl.id}:${at.id}">Under: ${at._cl.label} → ${at.label.slice(0,25)}</option>`);});
+  allT().forEach(at=>{if(at.id!==tid)opts.push(`<option value="ch:${at._cl.id}:${at.id}">Under: ${at._cl.label} → ${at.label.slice(0,22)}</option>`);});
   sel.innerHTML=opts.join('');
-  // deps
   const linked=S.deps.filter(d=>d.from===tid||d.to===tid).map(d=>d.from===tid?d.to:d.from);
   document.getElementById('te-deps').innerHTML=allT().filter(at=>at.id!==tid).map(at=>{
     const lk=linked.includes(at.id);
-    return `<div class="ditem${lk?' lk':''}" onclick="togDep('${tid}','${at.id}',this)">
+    return `<div class="ditem${lk?' lk':''}" onclick="togDep2('${tid}','${at.id}',this)">
       <div class="dcb"></div><span>${at._cl.label} → ${at.label.slice(0,35)}</span></div>`;
   }).join('');
   openMod('te-mod');
 }
-function togDep(fid,tid,el){
-  const ex=S.deps.findIndex(d=>(d.from===fid&&d.to===tid)||(d.from===tid&&d.to===fid));
+function togDep2(fid,tid2,el){
+  const ex=S.deps.findIndex(d=>(d.from===fid&&d.to===tid2)||(d.from===tid2&&d.to===fid));
   if(ex>=0){S.deps.splice(ex,1);el.classList.remove('lk');}
-  else{S.deps.push({from:fid,to:tid});el.classList.add('lk');}
+  else{S.deps.push({from:fid,to:tid2});el.classList.add('lk');}
 }
 function saveTEdit(){
   if(!teCtx)return;const{cid,tid}=teCtx;
@@ -627,175 +646,444 @@ function saveTEdit(){
   r.task.priority=document.getElementById('te-pri').value;
   r.task.notes=document.getElementById('te-notes').value.trim();
   const mv=document.getElementById('te-mv').value;
-  const [mt,...mr]=mv.split(':');
+  const[mt,...mr]=mv.split(':');
   if(mt==='cl'){
     const dc=mr[0];
     if(dc!==cid||r.parent){const sa2=r.parent?r.parent.children:r.cluster.tasks;sa2.splice(sa2.indexOf(r.task),1);gc(dc).tasks.push(r.task);}
-  } else if(mt==='ch'){
+  }else if(mt==='ch'){
     const[dc,dtid]=mr;const sa2=r.parent?r.parent.children:r.cluster.tasks;
     sa2.splice(sa2.indexOf(r.task),1);
     const dr=findT(dtid);if(dr){if(!dr.task.children)dr.task.children=[];dr.task.children.push(r.task);}
   }
-  closeMod('te-mod');if(S.sel)renderP();render();renderSB2();sched();
+  closeMod('te-mod');if(S.sel)renderPB();render();renderSB();sched();
 }
 function delT(){
-  if(!teCtx||!confirm('Delete task?'))return;const{cid,tid}=teCtx;
-  const r=findT(tid);if(!r)return;
+  if(!teCtx||!confirm('Delete task?'))return;
+  const{cid,tid}=teCtx;const r=findT(tid);if(!r)return;
   const sa2=r.parent?r.parent.children:r.cluster.tasks;sa2.splice(sa2.indexOf(r.task),1);
   S.deps=S.deps.filter(d=>d.from!==tid&&d.to!==tid);
-  closeMod('te-mod');if(S.sel===cid)renderP();render();renderSB2();sched();
+  closeMod('te-mod');if(S.sel===cid)renderPB();render();renderSB();sched();
 }
 
 // ══════════════════════════════════════════════════════════════
-// DEP MODE
+// DEP LINK MODE
 // ══════════════════════════════════════════════════════════════
-function togDepMode(){
+function togDep(){
   S.depMode=!S.depMode;S.depFirst=null;
   document.getElementById('dep-btn').classList.toggle('on',S.depMode);
   document.getElementById('dep-hint').style.display=S.depMode?'block':'none';
 }
 function depClick(tid){
-  if(!S.depFirst){S.depFirst=tid;toast('Now click the second task');return;}
-  if(S.depFirst===tid){S.depFirst=null;return;}
+  if(!S.depFirst){S.depFirst=tid;toast('Now click the second task');render();return;}
+  if(S.depFirst===tid){S.depFirst=null;render();return;}
   const ex=S.deps.findIndex(d=>(d.from===S.depFirst&&d.to===tid)||(d.from===tid&&d.to===S.depFirst));
-  if(ex>=0){S.deps.splice(ex,1);toast('Link removed');}else{S.deps.push({from:S.depFirst,to:tid});toast('Tasks linked ✓');}
+  if(ex>=0){S.deps.splice(ex,1);toast('Link removed');}
+  else{S.deps.push({from:S.depFirst,to:tid});toast('Tasks linked ✓');}
   S.depFirst=null;render();sched();
 }
 
 // ══════════════════════════════════════════════════════════════
-// MAP
+// MAP RENDER  —  core SVG engine
 // ══════════════════════════════════════════════════════════════
-const ROOT_R=46,TR=9,CR=6;
-
 function render(){
-  if(S.view!=='map'){if(S.view==='list')renderLV();else if(S.view==='summary')renderSUM();renderSB2();return;}
+  if(S.view!=='map'){
+    if(S.view==='list')renderLV();
+    else if(S.view==='summary')renderSUM();
+    renderSB();return;
+  }
   const mw=document.getElementById('map-wrap');
   const W=mw.clientWidth||800,H=mw.clientHeight||550;
-  S.root={x:W/2,y:H/2};
   const g=document.getElementById('graph');
   g.innerHTML='';g.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  const wg=se('g');wg.setAttribute('transform',`translate(${S.pan.x},${S.pan.y}) scale(${S.zoom})`);g.appendChild(wg);
+  const root=se('g');
+  root.setAttribute('transform',`translate(${S.pan.x},${S.pan.y}) scale(${S.zoom})`);
+  g.appendChild(root);
 
-  // pre-build task positions
-  const tpos={};
-  S.cl.forEach(c=>{
-    ensureC(c.tasks);
-    c.tasks.forEach(t=>t._cl=c);
-    btp(c.tasks,c.x,c.y,c,tpos,0);
-  });
+  // tag all tasks with cluster ref
+  S.cl.forEach(c=>{ensureC(c.tasks);tagCl(c.tasks,c);});
 
-  // dep lines
+  // compute auto-positions for tasks that have no explicit x,y
+  const tpos={}; // tid -> {x,y}
+  S.cl.forEach(c=>autoPos(c.tasks,c.x,c.y,c,tpos,0));
+
+  // ── dep lines ──
   S.deps.forEach(dep=>{
     const fp=tpos[dep.from],tp=tpos[dep.to];if(!fp||!tp)return;
-    const l=se('line');sa(l,{x1:fp.x,y1:fp.y,x2:tp.x,y2:tp.y,stroke:'rgba(108,138,247,0.35)','stroke-width':'1.5','stroke-dasharray':'5 3'});wg.appendChild(l);
-    const md=se('circle');sa(md,{cx:(fp.x+tp.x)/2,cy:(fp.y+tp.y)/2,r:3,fill:'#6a88f7',opacity:'.65'});wg.appendChild(md);
+    const mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2-(Math.abs(fp.x-tp.x)*.15);
+    const path=se('path');
+    path.setAttribute('d',`M${fp.x},${fp.y} Q${mx},${my} ${tp.x},${tp.y}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','rgba(96,165,250,0.4)');
+    path.setAttribute('stroke-width','1.2');
+    path.setAttribute('stroke-dasharray','4 3');
+    root.appendChild(path);
+    const dot=se('circle');sa(dot,{cx:(fp.x+tp.x)/2,cy:(fp.y+tp.y)/2,r:3,fill:'#60a5fa',opacity:'.6'});
+    root.appendChild(dot);
   });
 
-  // root→cluster lines
-  S.cl.forEach(c=>{
-    const l=se('line');sa(l,{x1:S.root.x,y1:S.root.y,x2:c.x,y2:c.y,stroke:'var(--border2)','stroke-width':'1','stroke-dasharray':'4 4'});wg.appendChild(l);
-  });
+  // ── cluster→task bezier lines ──
+  S.cl.forEach(c=>{drawTLines(c.tasks,c.x,c.y,tpos,root);});
 
-  // task tree lines & dots
+  // ── task dots ──
   S.cl.forEach(c=>{
     const col=PAL[c.color]||c.color;
-    drawTLines(c.tasks,c.x,c.y,tpos,wg);
-    drawTDots(c.tasks,col,tpos,wg,c);
+    drawTDots(c.tasks,col,tpos,root,c,W,H,g);
   });
 
-  // clusters — dynamic size based on label length
+  // ── cluster nodes (rounded rects) ──
   S.cl.forEach(c=>{
-    const col=PAL[c.color]||c.color,{d,t}=countT(c.tasks),pct=t?d/t:0,isSel=S.sel===c.id;
-    // Dynamic ellipse: wider for longer labels, minimum size maintained
-    const charPx=7.5, pad=28;
-    const CL_RX=Math.max(72, Math.ceil(c.label.length*charPx/2)+pad);
-    const CL_RY=Math.max(32, 32 + Math.floor(Math.max(0,c.label.length-16)/8)*4);
-    const cg=se('g');cg.style.cursor='pointer';
-    if(isSel){const gl=se('ellipse');sa(gl,{cx:c.x,cy:c.y,rx:CL_RX+10,ry:CL_RY+10,fill:'none',stroke:col+'30','stroke-width':'4'});cg.appendChild(gl);}
-    const el=se('ellipse');sa(el,{cx:c.x,cy:c.y,rx:CL_RX,ry:CL_RY,fill:col+'18',stroke:col,'stroke-width':isSel?'2':'1.2'});cg.appendChild(el);
-    if(pct>0){const p2=Math.PI*(CL_RX+CL_RY),pa=se('ellipse');sa(pa,{cx:c.x,cy:c.y,rx:CL_RX,ry:CL_RY,fill:'none',stroke:col,'stroke-width':'2.5','stroke-dasharray':`${p2*pct} ${p2}`,'stroke-linecap':'round'});cg.appendChild(pa);}
-    // Full label — no truncation, background pill sized to fit
-    const lt=c.label;
-    const lw=lt.length*charPx+pad;
-    const lb=se('rect');sa(lb,{x:c.x-lw/2,y:c.y-18,width:lw,height:22,rx:5,fill:col+'28','pointer-events':'none'});cg.appendChild(lb);
-    const ltx=se('text');sa(ltx,{x:c.x,y:c.y-7,'text-anchor':'middle','dominant-baseline':'central','font-size':'13','font-weight':'600','pointer-events':'none'});
-    ltx.setAttribute('class','nl');ltx.style.fill=col;ltx.textContent=lt;cg.appendChild(ltx);
-    const stx=se('text');sa(stx,{x:c.x,y:c.y+13,'text-anchor':'middle','dominant-baseline':'central','font-size':'10','pointer-events':'none'});
-    stx.setAttribute('class','ns');stx.style.fill=col+'99';stx.textContent=t?`${d}/${t} done`:'no tasks';cg.appendChild(stx);
-    // drag
-    let dr=null;
-    cg.addEventListener('mousedown',e=>{
-      e.stopPropagation();const r2=g.getBoundingClientRect();
-      dr={ox:c.x,oy:c.y,mx:e.clientX,my:e.clientY,sx:(W/r2.width)/S.zoom,sy:(H/r2.height)/S.zoom};
-      const mv=e2=>{c.x=dr.ox+(e2.clientX-dr.mx)*dr.sx;c.y=dr.oy+(e2.clientY-dr.my)*dr.sy;render();};
-      const up=()=>{dr=null;document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);sched();};
-      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-    });
-    cg.addEventListener('click',e=>{e.stopPropagation();openPanel(c.id);});
-    wg.appendChild(cg);
+    const col=PAL[c.color]||c.color;
+    const{d,t}=countT(c.tasks);
+    const pct=t?d/t:0;
+    const isSel=S.sel===c.id;
+
+    // size: auto-fit label
+    const charW=7.2,padX=22,minW=100;
+    const cw=Math.max(minW,c.label.length*charW+padX*2);
+    const ch=42;
+    const cx=c.x,cy=c.y;
+
+    const cg=se('g');cg.style.cursor='pointer';cg.setAttribute('data-cid',c.id);
+
+    // glow for selected
+    if(isSel){
+      const gl=se('rect');
+      sa(gl,{x:cx-cw/2-8,y:cy-ch/2-8,width:cw+16,height:ch+16,rx:18,
+        fill:'none',stroke:col,opacity:'.2','stroke-width':'6','filter':`blur(4px)`});
+      cg.appendChild(gl);
+    }
+
+    // background rect
+    const bg=se('rect');
+    sa(bg,{x:cx-cw/2,y:cy-ch/2,width:cw,height:ch,rx:12,
+      fill:isSel?col+'28':col+'18',
+      stroke:col,'stroke-width':isSel?'2':'1.2'});
+    cg.appendChild(bg);
+
+    // progress bar inside rect bottom
+    if(t>0){
+      const bw=cw-16,bh=3,bx=cx-bw/2,by=cy+ch/2-8;
+      const btrack=se('rect');sa(btrack,{x:bx,y:by,width:bw,height:bh,rx:2,fill:col+'33'});cg.appendChild(btrack);
+      const bfill=se('rect');sa(bfill,{x:bx,y:by,width:bw*pct,height:bh,rx:2,fill:col,opacity:'.8'});cg.appendChild(bfill);
+    }
+
+    // label — full, centered
+    const ltx=se('text');
+    sa(ltx,{x:cx,y:cy-(t>0?5:0),'text-anchor':'middle','dominant-baseline':'central',
+      'font-size':'13','font-weight':'600','fill':col,'pointer-events':'none'});
+    ltx.setAttribute('class','nf');
+    ltx.textContent=c.label;
+    cg.appendChild(ltx);
+
+    // task count
+    if(t>0){
+      const stx=se('text');
+      sa(stx,{x:cx,y:cy+10,'text-anchor':'middle','dominant-baseline':'central',
+        'font-size':'10','fill':col,'opacity':'.65','pointer-events':'none'});
+      stx.setAttribute('class','nf');
+      stx.textContent=`${d}/${t}`;
+      cg.appendChild(stx);
+    }
+
+    // drag handler
+    attachDrag(cg,'cluster',c.id,null,null,g,W,H);
+    cg.addEventListener('click',e=>{e.stopPropagation();if(!S._wasDrag)openP(c.id);});
+
+    // drop target for re-parenting tasks
+    cg.addEventListener('dragover',e=>{e.preventDefault();cg.classList.add('drop-target-active');});
+    cg.addEventListener('dragleave',()=>cg.classList.remove('drop-target-active'));
+    cg.addEventListener('drop',e=>{e.preventDefault();cg.classList.remove('drop-target-active');dropOnCluster(c.id);});
+
+    root.appendChild(cg);
   });
 
-  // root
-  const rg=se('g');
-  const rc=se('circle');sa(rc,{cx:S.root.x,cy:S.root.y,r:ROOT_R,fill:'var(--node-bg)',stroke:'var(--border2)','stroke-width':'1.5'});rg.appendChild(rc);
-  ['Work','Map'].forEach((txt,i)=>{
-    const rt=se('text');sa(rt,{x:S.root.x,y:S.root.y+(i?10:-7),'text-anchor':'middle','dominant-baseline':'central','pointer-events':'none'});
-    rt.setAttribute('class','nl');rt.style.fill=i?'var(--text3)':'var(--accent)';rt.style.fontSize=i?'11px':'16px';rt.style.fontWeight=i?'400':'700';rt.textContent=txt;rg.appendChild(rt);
-  });
-  wg.appendChild(rg);
+  // ── diagram cards ──
+  S.diagrams.forEach(diag=>renderDiagCard(diag,root,g,W,H));
 
-  // pan
-  let pn=false,ps={};
-  g.onmousedown=e=>{if(e.target.closest('[style*="cursor: pointer"],.root-g'))return;pn=true;ps={x:e.clientX-S.pan.x,y:e.clientY-S.pan.y};g.classList.add('pan');};
-  g.onmousemove=e=>{if(!pn)return;S.pan.x=e.clientX-ps.x;S.pan.y=e.clientY-ps.y;render();};
-  g.onmouseup=()=>{pn=false;g.classList.remove('pan');};
-  g.onmouseleave=()=>{pn=false;g.classList.remove('pan');};
-  renderSB2();
+  renderSB();
 }
 
-function btp(tasks,px,py,cl,pos,depth){
+// ── auto position tasks that have no x,y set ──
+function autoPos(tasks,px,py,cl,pos,depth){
   if(!tasks?.length)return;
-  const n=tasks.length,angle=Math.atan2(py-S.root.y,px-S.root.x);
-  const spread=depth===0?Math.PI*.7:Math.PI*.5,r=depth===0?(95+Math.min(n,5)*6):(50+depth*6);
+  const n=tasks.length;
+  const angle=Math.atan2(py-(document.getElementById('map-wrap').clientHeight/2||275),
+                         px-(document.getElementById('map-wrap').clientWidth/2||400));
+  const spread=depth===0?Math.PI*.7:Math.PI*.5;
+  const r=depth===0?(100+Math.min(n,5)*8):(55+depth*8);
   tasks.forEach((t,i)=>{
-    t._cl=cl;const a=angle+(i-(n-1)/2)*(spread/Math.max(n-1,1));
-    const tx=px+Math.cos(a)*r,ty=py+Math.sin(a)*r;pos[t.id]={x:tx,y:ty};
-    btp(t.children,tx,ty,cl,pos,depth+1);
+    const a=angle+(i-(n-1)/2)*(spread/Math.max(n-1,1));
+    const ax=t.x!==null&&t.x!==undefined?t.x:px+Math.cos(a)*r;
+    const ay=t.y!==null&&t.y!==undefined?t.y:py+Math.sin(a)*r;
+    pos[t.id]={x:ax,y:ay};
+    autoPos(t.children,ax,ay,cl,pos,depth+1);
   });
 }
+
+function tagCl(tasks,cl){(tasks||[]).forEach(t=>{t._cl=cl;tagCl(t.children,cl);});}
+
+// ── bezier curve from parent to child ──
 function drawTLines(tasks,px,py,pos,g){
   (tasks||[]).forEach(t=>{
     const tp=pos[t.id];if(!tp)return;
-    const l=se('line');sa(l,{x1:px,y1:py,x2:tp.x,y2:tp.y,stroke:'var(--border)','stroke-width':'0.8'});g.appendChild(l);
+    const mx=(px+tp.x)/2,my=(py+tp.y)/2;
+    const path=se('path');
+    path.setAttribute('d',`M${px},${py} Q${mx},${my} ${tp.x},${tp.y}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','var(--border2)');
+    path.setAttribute('stroke-width','1');
+    g.appendChild(path);
     drawTLines(t.children,tp.x,tp.y,pos,g);
   });
 }
-function drawTDots(tasks,col,pos,g,cl){
+
+// ── task dot nodes ──
+function drawTDots(tasks,col,pos,g,cl,W,H,svgEl2){
+  const now=new Date();now.setHours(0,0,0,0);
   (tasks||[]).forEach(t=>{
     const tp=pos[t.id];if(!tp)return;
-    const tg=se('g');tg.style.cursor='pointer';
-    const r2=t.children?.length?TR:CR;
-    const ci=se('circle');sa(ci,{cx:tp.x,cy:tp.y,r:r2,fill:t.done?col:'var(--node-bg)',stroke:col,'stroke-width':'1.5'});tg.appendChild(ci);
-    if(t.done){const ck=se('text');sa(ck,{x:tp.x,y:tp.y,'text-anchor':'middle','dominant-baseline':'central','font-size':'7','pointer-events':'none'});ck.style.fill='#fff';ck.textContent='✓';tg.appendChild(ck);}
-    if(t.priority==='high'){const pd=se('circle');sa(pd,{cx:tp.x+r2-1,cy:tp.y-r2+1,r:3,fill:'#f87171'});tg.appendChild(pd);}
-    // VISIBLE LABEL — background rect + text
-    const lt2=t.label.length>24?t.label.slice(0,23)+'…':t.label;
-    const lw2=lt2.length*6.2+12;
-    const lbg=se('rect');sa(lbg,{x:tp.x-lw2/2,y:tp.y+r2+2,width:lw2,height:15,rx:3,fill:'var(--bg2)',opacity:'.9','pointer-events':'none'});tg.appendChild(lbg);
-    const ltx=se('text');sa(ltx,{x:tp.x,y:tp.y+r2+10,'text-anchor':'middle','dominant-baseline':'central','font-size':'10','pointer-events':'none'});
-    ltx.setAttribute('class','tl');ltx.style.fill=t.done?'var(--text3)':'var(--node-fg)';ltx.textContent=lt2;tg.appendChild(ltx);
+    const r=t.children?.length?9:7;
+    const overdue=!t.done&&t.due&&new Date(t.due)<now;
+    const tg=se('g');tg.setAttribute('data-tid',t.id);tg.setAttribute('data-cid',cl.id);
+    tg.style.cursor='pointer';
+
+    // overdue glow ring
+    if(overdue){
+      const og=se('circle');
+      sa(og,{cx:tp.x,cy:tp.y,r:r+5,fill:'none',stroke:'rgba(248,113,113,.5)','stroke-width':'2'});
+      og.style.animation='glow-red 2s ease-in-out infinite';
+      tg.appendChild(og);
+    }
+
+    // dep-first highlight
+    if(S.depFirst===t.id){
+      const hl=se('circle');sa(hl,{cx:tp.x,cy:tp.y,r:r+5,fill:'none',stroke:'var(--coral)','stroke-width':'2'});tg.appendChild(hl);
+    }
+
+    // priority ring
+    if(t.priority&&!t.done){
+      const pc=t.priority==='high'?'#f87171':t.priority==='mid'?'#fbbf24':'#34d399';
+      const pr=se('circle');sa(pr,{cx:tp.x,cy:tp.y,r:r+3,fill:'none',stroke:pc,'stroke-width':'1.5',opacity:'.8'});tg.appendChild(pr);
+    }
+
+    // main circle
+    const ci=se('circle');
+    sa(ci,{cx:tp.x,cy:tp.y,r,
+      fill:t.done?col:'var(--node-bg)',
+      stroke:overdue?'#f87171':col,'stroke-width':'1.5'});
+    tg.appendChild(ci);
+
+    // done check
+    if(t.done){
+      const ck=se('text');sa(ck,{x:tp.x,y:tp.y,'text-anchor':'middle','dominant-baseline':'central','font-size':'7','pointer-events':'none'});
+      ck.style.fill='#fff';ck.textContent='✓';tg.appendChild(ck);
+    }
+
+    // label with background
+    const lt=t.label.length>22?t.label.slice(0,21)+'…':t.label;
+    const lw=lt.length*5.8+12;
+    const lbg=se('rect');
+    sa(lbg,{x:tp.x-lw/2,y:tp.y+r+2,width:lw,height:16,rx:3,
+      fill:'var(--bg2)',opacity:'.92','pointer-events':'none'});
+    tg.appendChild(lbg);
+    const ltx=se('text');
+    sa(ltx,{x:tp.x,y:tp.y+r+10,'text-anchor':'middle','dominant-baseline':'central',
+      'font-size':'10','pointer-events':'none'});
+    ltx.setAttribute('class','nf');
+    ltx.style.fill=overdue?'#f87171':(t.done?'var(--text3)':'var(--node-fg)');
+    ltx.textContent=lt;tg.appendChild(ltx);
+
+    // due date label
+    if(t.due&&!t.done){
+      const dd=new Date(t.due);dd.setHours(0,0,0,0);
+      const df=Math.round((dd-now)/86400000);
+      const dtxt=df===0?'Today':df===1?'Tmrw':(df<0?`${Math.abs(df)}d late`:df<=7?`${df}d`:'');
+      if(dtxt){
+        const dlbg=se('rect');sa(dlbg,{x:tp.x-16,y:tp.y+r+19,width:32,height:12,rx:3,fill:overdue?'rgba(248,113,113,.15)':'var(--bg3)','pointer-events':'none'});tg.appendChild(dlbg);
+        const dtx=se('text');sa(dtx,{x:tp.x,y:tp.y+r+26,'text-anchor':'middle','dominant-baseline':'central','font-size':'9','pointer-events':'none'});
+        dtx.setAttribute('class','nf');dtx.style.fill=overdue?'#f87171':'var(--text3)';dtx.textContent=dtxt;tg.appendChild(dtx);
+      }
+    }
+
     // dep indicator dot
-    if(S.deps.some(d=>d.from===t.id||d.to===t.id)){const di=se('circle');sa(di,{cx:tp.x-r2+1,cy:tp.y-r2+1,r:3,fill:'var(--accent)'});tg.appendChild(di);}
-    // highlight if depFirst
-    if(S.depFirst===t.id){const hl=se('circle');sa(hl,{cx:tp.x,cy:tp.y,r:r2+4,fill:'none',stroke:'var(--coral)','stroke-width':'2','pointer-events':'none'});tg.appendChild(hl);}
+    if(S.deps.some(d=>d.from===t.id||d.to===t.id)){
+      const di=se('circle');sa(di,{cx:tp.x+r-1,cy:tp.y-r+1,r:3,fill:'var(--blue)'});tg.appendChild(di);
+    }
+
+    // interactions
+    attachDrag(tg,'task',t.id,cl.id,null,svgEl2,W,H);
     tg.addEventListener('click',e=>{
       e.stopPropagation();
+      if(S._wasDrag)return;
       if(S.depMode){depClick(t.id);return;}
-      openPanel(cl.id);
+      openP(cl.id);
     });
     g.appendChild(tg);
-    drawTDots(t.children,col,pos,g,cl);
+    drawTDots(t.children,col,pos,g,cl,W,H,svgEl2);
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+// UNIVERSAL DRAG — works for clusters, tasks, diagrams
+// ══════════════════════════════════════════════════════════════
+function attachDrag(el,type,id,clusterId,parentId,svgEl2,W,H){
+  let drag=null;
+  el.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    e.stopPropagation();
+    S._wasDrag=false;
+    const rect=svgEl2.getBoundingClientRect();
+    const sx=(W/rect.width)/S.zoom, sy=(H/rect.height)/S.zoom;
+    let ox,oy;
+    if(type==='cluster'){const c=gc(id);ox=c.x;oy=c.y;}
+    else if(type==='task'){const r=findT(id);ox=r?.task.x??0;oy=r?.task.y??0;}
+    else if(type==='diagram'){const d=S.diagrams.find(x=>x.id===id);ox=d.x;oy=d.y;}
+    drag={ox,oy,mx:e.clientX,my:e.clientY,sx,sy,moved:false};
+
+    const onMove=e2=>{
+      const dx=(e2.clientX-drag.mx)*drag.sx, dy=(e2.clientY-drag.my)*drag.sy;
+      if(Math.abs(dx)>3||Math.abs(dy)>3){drag.moved=true;S._wasDrag=true;}
+      if(!drag.moved)return;
+      if(type==='cluster'){const c=gc(id);c.x=drag.ox+dx;c.y=drag.oy+dy;}
+      else if(type==='task'){
+        const r=findT(id);
+        if(r){r.task.x=drag.ox+dx;r.task.y=drag.oy+dy;}
+        // highlight drop targets while dragging task
+        highlightDropTargets(e2,svgEl2);
+      }
+      else if(type==='diagram'){const d=S.diagrams.find(x=>x.id===id);d.x=drag.ox+dx;d.y=drag.oy+dy;}
+      render();
+    };
+    const onUp=e2=>{
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      clearDropHighlights();
+      if(type==='task'&&drag.moved){
+        // check drop-on-target
+        checkDrop(e2,id,clusterId,svgEl2);
+      }
+      if(drag.moved)sched();
+    };
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+}
+
+function highlightDropTargets(e,svgEl2){
+  const rect=svgEl2.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)/S.zoom-S.pan.x/S.zoom;
+  const my=(e.clientY-rect.top)/S.zoom-S.pan.y/S.zoom;
+  // highlight clusters near cursor
+  S.cl.forEach(c=>{
+    const cw=Math.max(100,c.label.length*7.2+44),ch=42;
+    const hit=mx>c.x-cw/2&&mx<c.x+cw/2&&my>c.y-ch/2&&my<c.y+ch/2;
+    const el=document.querySelector(`[data-cid="${c.id}"]`);
+    if(el)el.style.filter=hit?'drop-shadow(0 0 8px var(--accent))':'';
+  });
+}
+function clearDropHighlights(){
+  document.querySelectorAll('[data-cid]').forEach(el=>el.style.filter='');
+}
+
+function checkDrop(e,dragTid,fromCid,svgEl2){
+  const rect=svgEl2.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)/S.zoom-S.pan.x/S.zoom;
+  const my=(e.clientY-rect.top)/S.zoom-S.pan.y/S.zoom;
+  // check cluster drop
+  for(const c of S.cl){
+    const cw=Math.max(100,c.label.length*7.2+44),ch=42;
+    if(mx>c.x-cw/2&&mx<c.x+cw/2&&my>c.y-ch/2&&my<c.y+ch/2){
+      if(c.id!==fromCid){
+        reparentTask(dragTid,fromCid,c.id,null);
+        toast(`Moved to ${c.label}`);
+      }
+      return;
+    }
+  }
+  // check task node drop (become child)
+  const allTasks=allT();
+  for(const at of allTasks){
+    if(at.id===dragTid)continue;
+    const tp=getTaskPos(at.id);
+    if(!tp)continue;
+    const dist=Math.sqrt((mx-tp.x)**2+(my-tp.y)**2);
+    if(dist<14){
+      reparentTask(dragTid,fromCid,at._cl.id,at.id);
+      toast(`Made subtask of: ${at.label}`);
+      return;
+    }
+  }
+}
+
+function getTaskPos(tid){
+  // quick lookup: re-compute from state
+  const tpos={};
+  S.cl.forEach(c=>autoPos(c.tasks,c.x,c.y,c,tpos,0));
+  return tpos[tid];
+}
+
+function reparentTask(tid,fromCid,toCid,toParentTid){
+  const r=findT(tid);if(!r)return;
+  const srcArr=r.parent?r.parent.children:r.cluster.tasks;
+  srcArr.splice(srcArr.indexOf(r.task),1);
+  if(toParentTid){
+    const pr=findT(toParentTid);
+    if(pr){if(!pr.task.children)pr.task.children=[];pr.task.children.push(r.task);}
+  }else{
+    gc(toCid).tasks.push(r.task);
+  }
+  // reset position so it auto-places
+  r.task.x=null;r.task.y=null;
+  render();sched();
+}
+
+function dropOnCluster(cid){
+  if(S._dragTid){
+    reparentTask(S._dragTid,S._dragFromCid,cid,null);
+    toast(`Moved to ${gc(cid).label}`);
+    S._dragTid=null;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DIAGRAM CARDS
+// ══════════════════════════════════════════════════════════════
+function renderDiagCard(diag,root,g,W,H){
+  const dg=se('g');dg.setAttribute('data-diag',diag.id);
+  const cw=diag.w||260,ch=diag.h||180;
+  const x=diag.x,y=diag.y;
+
+  // card background
+  const bg=se('rect');sa(bg,{x,y,width:cw,height:ch,rx:12,
+    fill:'var(--bg2)',stroke:'var(--border2)','stroke-width':'1',
+    filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'});
+  dg.appendChild(bg);
+
+  // title bar
+  const tb=se('rect');sa(tb,{x,y,width:cw,height:28,rx:12,fill:'var(--bg3)'});dg.appendChild(tb);
+  const tb2=se('rect');sa(tb2,{x,y:y+16,width:cw,height:12,fill:'var(--bg3)'});dg.appendChild(tb2);
+
+  const ttx=se('text');sa(ttx,{x:x+10,y:y+14,'dominant-baseline':'central','font-size':'11','font-weight':'600','fill':'var(--text2)','pointer-events':'none'});
+  ttx.setAttribute('class','nf');ttx.textContent=diag.title||'Diagram';dg.appendChild(ttx);
+
+  // close button
+  const xbtn=se('text');sa(xbtn,{x:x+cw-10,y:y+14,'text-anchor':'middle','dominant-baseline':'central','font-size':'11','fill':'var(--text3)',cursor:'pointer'});
+  xbtn.textContent='✕';
+  xbtn.addEventListener('click',e=>{e.stopPropagation();if(confirm('Delete diagram?')){S.diagrams=S.diagrams.filter(d=>d.id!==diag.id);render();sched();}});
+  dg.appendChild(xbtn);
+
+  // SVG content inside card
+  if(diag.svg){
+    const fo=se('foreignObject');sa(fo,{x:x+2,y:y+29,width:cw-4,height:ch-31,'pointer-events':'none'});
+    const div=document.createElementNS('http://www.w3.org/1999/xhtml','div');
+    div.style.cssText=`width:100%;height:100%;overflow:hidden;border-radius:0 0 10px 10px;background:var(--bg2)`;
+    div.innerHTML=diag.svg;
+    fo.appendChild(div);dg.appendChild(fo);
+  }
+
+  // drag handle
+  attachDrag(dg,'diagram',diag.id,null,null,g,W,H);
+  root.appendChild(dg);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -807,16 +1095,18 @@ function renderLV(){
   el.innerHTML=S.cl.map(c=>{
     const col=PAL[c.color]||c.color,{d,t}=countT(c.tasks);
     return `<div class="lvc"><div class="lvh" onclick="lvTog('lv${c.id}',this)">
-      <div class="lvhd" style="background:${col}"></div><div class="lvhn">${esc(c.label)}</div>
-      <div class="lvhp">${d}/${t}</div><div class="lvch op">▶</div></div>
+      <div class="lvhd" style="background:${col}"></div>
+      <div class="lvhn">${esc(c.label)}</div>
+      <div class="lvhp">${d}/${t}</div>
+      <div class="lvch op">▶</div></div>
       <div class="lvb op" id="lv${c.id}">${renderLvT(c.tasks,col,0)}${!t?'<div style="font-size:12px;color:var(--text3);padding:6px 0">No tasks</div>':''}</div>
     </div>`;
   }).join('');
 }
 function renderLvT(tasks,col,d){
-  return (tasks||[]).map(t=>`
-    <div class="lvtr${d?' lvsub':''}${t.done?' lvdone':''}" onclick="openPanel('${t._cl?.id||S.sel||''}')">
-      <div style="width:6px;height:6px;border-radius:50%;background:${t.done?col:col+'55'};flex-shrink:0"></div>
+  return(tasks||[]).map(t=>`
+    <div class="lvtr${d?' lvsub':''}${t.done?' lvdone':''}" onclick="openP('${t._cl?.id||''}')">
+      <div style="width:6px;height:6px;border-radius:2px;background:${t.done?col:col+'55'};flex-shrink:0"></div>
       ${esc(t.label)}
       ${t.priority?`<span class="pchip p${t.priority[0]}" style="margin-left:auto">${t.priority}</span>`:''}
       ${t.due?`<span class="dtag" style="margin-left:4px">${t.due}</span>`:''}
@@ -826,7 +1116,7 @@ function renderLvT(tasks,col,d){
 function lvTog(id,h){const el=document.getElementById(id);el.classList.toggle('op');h.querySelector('.lvch').classList.toggle('op');}
 
 // ══════════════════════════════════════════════════════════════
-// SUMMARY
+// SUMMARY VIEW
 // ══════════════════════════════════════════════════════════════
 function renderSUM(){
   const el=document.getElementById('sum-view');
@@ -834,39 +1124,35 @@ function renderSUM(){
   const tot=all.length,done=all.filter(t=>t.done).length;
   const ov=all.filter(t=>!t.done&&t.due&&new Date(t.due)<now).length;
   const wk=all.filter(t=>!t.done&&t.due&&new Date(t.due)>=now&&Math.round((new Date(t.due)-now)/86400000)<=7).length;
-  const pending=all.filter(t=>!t.done);
-  pending.sort((a,b)=>{const p={high:0,mid:1,low:2,'':3};return(p[a.priority||''])-(p[b.priority||''])|| (a.due&&b.due?new Date(a.due)-new Date(b.due):a.due?-1:b.due?1:0);});
+  const pend=all.filter(t=>!t.done);
+  pend.sort((a,b)=>{const p={high:0,mid:1,low:2,'':3};return(p[a.priority||''])-(p[b.priority||''])||((a.due&&b.due)?new Date(a.due)-new Date(b.due):a.due?-1:b.due?1:0);});
   const em=localStorage.getItem('wm_em')||'';
   el.innerHTML=`
-    <div class="sum-grid">
-      <div class="sum-card"><div class="sum-num">${tot-done}</div><div class="sum-lbl">Pending</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--coral)">${ov}</div><div class="sum-lbl">Overdue</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--amber)">${wk}</div><div class="sum-lbl">Due this week</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--green)">${done}</div><div class="sum-lbl">Done</div></div>
+    <div class="sgrid">
+      <div class="scard"><div class="snum">${tot-done}</div><div class="slbl">Pending</div></div>
+      <div class="scard"><div class="snum" style="color:var(--coral)">${ov}</div><div class="slbl">Overdue</div></div>
+      <div class="scard"><div class="snum" style="color:var(--amber)">${wk}</div><div class="slbl">Due this week</div></div>
+      <div class="scard"><div class="snum" style="color:var(--green)">${done}</div><div class="slbl">Done</div></div>
     </div>
-    <div>
-      <div class="sum-sec">📬 Email digest</div>
-      <div class="email-row">
-        <input class="email-inp" id="emi" type="email" placeholder="your@email.com" value="${em}">
-        <button class="esend" onclick="sendEM()">Send</button>
-      </div>
-    </div>
-    <div><div class="sum-sec">🔴 High priority</div><div class="sum-tasks">${sumTasks(pending.filter(t=>t.priority==='high'),now)||emptyMsg()}</div></div>
-    <div><div class="sum-sec">⚠️ Overdue</div><div class="sum-tasks">${sumTasks(pending.filter(t=>t.due&&new Date(t.due)<now),now)||emptyMsg()}</div></div>
-    <div><div class="sum-sec">📅 Due this week</div><div class="sum-tasks">${sumTasks(pending.filter(t=>t.due&&new Date(t.due)>=now&&Math.round((new Date(t.due)-now)/86400000)<=7),now)||emptyMsg()}</div></div>
-    <div><div class="sum-sec">📋 All pending</div><div class="sum-tasks">${sumTasks(pending,now)||'<div style="color:var(--green);font-size:13px;padding:8px">All done! 🎉</div>'}</div></div>`;
+    <div><div class="ssec">📬 Email digest</div>
+      <div class="erow"><input class="einp" id="emi" type="email" placeholder="your@email.com" value="${em}">
+      <button class="esend" onclick="sendEM()">Send</button></div></div>
+    <div><div class="ssec">🔴 High priority</div><div class="stasks">${sumT(pend.filter(t=>t.priority==='high'),now)||empty()}</div></div>
+    <div><div class="ssec">⚠️ Overdue</div><div class="stasks">${sumT(pend.filter(t=>t.due&&new Date(t.due)<now),now)||empty()}</div></div>
+    <div><div class="ssec">📅 Due this week</div><div class="stasks">${sumT(pend.filter(t=>t.due&&new Date(t.due)>=now&&Math.round((new Date(t.due)-now)/86400000)<=7),now)||empty()}</div></div>
+    <div><div class="ssec">📋 All pending</div><div class="stasks">${sumT(pend,now)||'<div style="color:var(--green);padding:8px">All done! 🎉</div>'}</div></div>`;
 }
-function emptyMsg(){return '<div style="color:var(--text3);font-size:13px;padding:6px">None</div>';}
-function sumTasks(tasks,now){
+function empty(){return '<div style="color:var(--text3);font-size:13px;padding:6px">None</div>';}
+function sumT(tasks,now){
   return tasks.map(t=>{
     let dc='dtag',ds='';
     if(t.due){const d2=new Date(t.due);d2.setHours(0,0,0,0);const df=Math.round((d2-now)/86400000);
-      ds=df<0?`${Math.abs(df)}d overdue`:df===0?'Today':df===1?'Tomorrow':`${df}d`;dc='dtag'+(df<0?' ov':df<=3?' sn':'');}
+      ds=df<0?`${Math.abs(df)}d late`:df===0?'Today':df===1?'Tmrw':`${df}d`;dc='dtag'+(df<0?' ov':df<=3?' sn':'');}
     const col=PAL[t._cl?.color]||'#888';
-    return `<div class="stask" onclick="openPanel('${t._cl?.id||''}');sw('map')">
-      <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;margin-top:4px"></div>
-      <div class="stask-lbl">${esc(t.label)}</div>
-      <div class="stask-meta">
+    return `<div class="stask" onclick="openP('${t._cl?.id||''}');sw('map')">
+      <div style="width:8px;height:8px;border-radius:2px;background:${col};flex-shrink:0;margin-top:4px"></div>
+      <div class="stlbl">${esc(t.label)}</div>
+      <div class="stmeta">
         ${t.priority?`<span class="pchip p${t.priority[0]}">${t.priority}</span>`:''}
         ${ds?`<span class="${dc}">${ds}</span>`:''}
         <span class="ctag">${esc(t._cl?.label||'')}</span>
@@ -875,38 +1161,40 @@ function sumTasks(tasks,now){
 }
 function sendEM(){
   const em=document.getElementById('emi').value.trim();
-  if(!em||!em.includes('@')){toast('Enter a valid email');return;}
+  if(!em||!em.includes('@')){toast('Enter valid email');return;}
   localStorage.setItem('wm_em',em);
-  const all=allT(),now=new Date();now.setHours(0,0,0,0);
+  const all=allT(),now=new Date();
   const pend=all.filter(t=>!t.done);
   pend.sort((a,b)=>{const p={high:0,mid:1,low:2,'':3};return(p[a.priority||''])-(p[b.priority||'']);});
-  const done=all.filter(t=>t.done).length;
   let body=`WorkMap Digest — ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}\n\n`;
-  body+=`${all.length} total | ${done} done | ${pend.length} pending\n\n`;
+  body+=`${all.length} total | ${all.filter(t=>t.done).length} done | ${pend.length} pending\n\n`;
   const byP={high:[],mid:[],low:[],'':[]}; pend.forEach(t=>(byP[t.priority||'']||byP['']).push(t));
-  const sec=(em2,ts)=>ts.length?em2+'\n'+ts.map(t=>`  • [${t._cl?.label}] ${t.label}${t.due?` — due ${t.due}`:''}`).join('\n')+'\n\n':'';
-  body+=sec('🔴 HIGH PRIORITY',byP.high);body+=sec('🟡 MEDIUM PRIORITY',byP.mid);body+=sec('🟢 LOW PRIORITY',byP.low);body+=sec('📋 NO PRIORITY',byP['']);
-  window.open(`mailto:${em}?subject=${encodeURIComponent(`WorkMap Digest — ${pend.length} pending`)}&body=${encodeURIComponent(body)}`);
+  const sec=(hd,ts)=>ts.length?hd+'\n'+ts.map(t=>`  • [${t._cl?.label}] ${t.label}${t.due?` — due ${t.due}`:''}`).join('\n')+'\n\n':'';
+  body+=sec('🔴 HIGH',byP.high)+sec('🟡 MEDIUM',byP.mid)+sec('🟢 LOW',byP.low)+sec('📋 NONE',byP['']);
+  window.open(`mailto:${em}?subject=${encodeURIComponent('WorkMap Digest — '+pend.length+' pending')}&body=${encodeURIComponent(body)}`);
   toast('Opening mail client…');
 }
 
 // ══════════════════════════════════════════════════════════════
 // SIDEBAR
 // ══════════════════════════════════════════════════════════════
-function renderSB2(){
+function renderSB(){
   const el=document.getElementById('plist');
   if(!S.cl.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px">No clusters</div>';return;}
-  el.innerHTML=S.cl.map(c=>{const{d,t}=countT(c.tasks);return `<div class="pi${S.sel===c.id?' on':''}" onclick="openPanel('${c.id}')">
-    <div class="pidot" style="background:${PAL[c.color]||c.color}"></div>
-    <div class="piname">${esc(c.label)}</div><div class="pipct">${t?Math.round(d/t*100):0}%</div></div>`;}).join('');
+  el.innerHTML=S.cl.map(c=>{const{d,t}=countT(c.tasks);
+    return `<div class="pi${S.sel===c.id?' on':''}" onclick="openP('${c.id}')">
+      <div class="pidot" style="background:${PAL[c.color]||c.color}"></div>
+      <div class="piname">${esc(c.label)}</div>
+      <div class="pipct">${t?Math.round(d/t*100):0}%</div></div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════════════════════
-// THEME / VIEW / ZOOM
+// VIEW / ZOOM / THEME
 // ══════════════════════════════════════════════════════════════
-function setTheme(t){document.body.setAttribute('data-theme',t);localStorage.setItem('wm_theme',t);closeMod('theme-mod');render();}
 function sw(v){
-  S.view=v;['map','list','sum'].forEach(n=>document.getElementById('btn-'+n).classList.toggle('active',n===v));
+  S.view=v;
+  ['map','list','sum'].forEach(n=>document.getElementById('btn-'+n).classList.toggle('on',n===v));
   document.getElementById('map-wrap').style.display=v==='map'?'':'none';
   document.getElementById('list-view').classList.toggle('sh',v==='list');
   document.getElementById('sum-view').classList.toggle('sh',v==='summary');
@@ -914,9 +1202,25 @@ function sw(v){
 }
 function dz(f){S.zoom=Math.min(3,Math.max(.2,S.zoom*f));document.getElementById('zlbl').textContent=Math.round(S.zoom*100)+'%';render();}
 function rv(){S.zoom=1;S.pan={x:0,y:0};document.getElementById('zlbl').textContent='100%';render();}
+function setTh(t){document.body.setAttribute('data-theme',t);localStorage.setItem('wm_th',t);closeMod('theme-mod');render();}
+
+// canvas pan
+function initPan(){
+  const g=document.getElementById('graph');
+  let pn=false,ps={};
+  g.addEventListener('mousedown',e=>{
+    if(e.target.closest('[data-cid],[data-tid],[data-diag]'))return;
+    pn=true;ps={x:e.clientX-S.pan.x,y:e.clientY-S.pan.y};
+    g.style.cursor='grabbing';
+  });
+  window.addEventListener('mousemove',e=>{if(!pn)return;S.pan.x=e.clientX-ps.x;S.pan.y=e.clientY-ps.y;render();});
+  window.addEventListener('mouseup',()=>{pn=false;const g2=document.getElementById('graph');if(g2)g2.style.cursor='grab';});
+  // scroll to zoom
+  g.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:1/1.1;dz(f);},{passive:false});
+}
 
 // ══════════════════════════════════════════════════════════════
-// UTIL
+// UTILS
 // ══════════════════════════════════════════════════════════════
 function se(t){return document.createElementNS('http://www.w3.org/2000/svg',t);}
 function sa(el,o){Object.entries(o).forEach(([k,v])=>el.setAttribute(k,v));}
@@ -925,295 +1229,335 @@ function openMod(id){document.getElementById(id).classList.add('op');}
 function closeMod(id){document.getElementById(id).classList.remove('op');}
 let tT;
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('sh');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('sh'),2600);}
-function ensureC(tasks){(tasks||[]).forEach(t=>{if(!t.children)t.children=[];ensureC(t.children);});}
 
 // ══════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════
 async function init(){
-  document.body.setAttribute('data-theme',localStorage.getItem('wm_theme')||'dark');
+  document.body.setAttribute('data-theme',localStorage.getItem('wm_th')||'dark');
   const con=initSB();
   if(con){setSt('sv');if(!await loadSB())loadL();setSt('ok');closeMod('setup-mod');}
-  else{loadL();if(!localStorage.getItem('wm_v')){localStorage.setItem('wm_v','1');}else{closeMod('setup-mod');document.getElementById('setup-btn').style.display='flex';}}
-  S.cl.forEach(c=>{ensureC(c.tasks);c.tasks.forEach(t=>t._cl=c);});
-  render();window.addEventListener('resize',render);
+  else{
+    loadL();
+    if(!localStorage.getItem('wm_v')){localStorage.setItem('wm_v','1');}
+    else{closeMod('setup-mod');document.getElementById('setup-btn').style.display='flex';}
+  }
+  S.cl.forEach(c=>{ensureC(c.tasks);tagCl(c.tasks,c);});
+  initPan();
+  render();
+  window.addEventListener('resize',render);
+  // morning briefing trigger
+  const today=new Date().toDateString();
+  const last=localStorage.getItem('wm_last_open');
+  if(last!==today&&AI_KEY&&S.cl.length){
+    localStorage.setItem('wm_last_open',today);
+    setTimeout(()=>{togAI();chipSend('Give me a morning briefing');},1800);
+  }
+  localStorage.setItem('wm_last_open',today);
 }
 init();
-initAI();
 </script>
+
 <script>
-
 // ══════════════════════════════════════════════════════════════
-// AI ENGINE
+// AI ENGINE  v4
 // ══════════════════════════════════════════════════════════════
-let AI_KEY = '';
-let AI_OPEN = false;
-let AI_MSGS = []; // chat history for multi-turn
-let AI_BUSY = false;
+let AI_KEY='',AI_OPEN=false,AI_MSGS=[],AI_BUSY=false;
 
-function initAI() {
-  AI_KEY = localStorage.getItem('wm_ai_key') || '';
-  const keyRow = document.getElementById('ai-key-row');
-  keyRow.style.display = AI_KEY ? 'none' : 'flex';
-  if (AI_KEY) {
-    addAIMsg('ai', `Hi Dhruv! I'm your WorkMap AI. I can:\n\n• **Create** clusters and tasks from your description\n• **Suggest** subtasks for any project\n• **Link** tasks based on dependencies I detect\n• Give you a **daily briefing** on what to focus\n\nTry: *"Give me a briefing"* or *"Add a cluster for SEO with tasks"*`, true);
+function initAI(){
+  AI_KEY=localStorage.getItem('wm_ai_key')||'';
+  document.getElementById('ai-key-row').style.display=AI_KEY?'none':'flex';
+  if(AI_KEY){
+    addMsg('bot',`Hi Dhruv! I'm your WorkMap AI.\n\n**I can:**\n• Create clusters & tasks from your description\n• Suggest subtasks with pharma context\n• Draw flowcharts & diagrams on your map\n• Parse dates like "next Friday" or "in 2 weeks"\n• Detect & suggest task dependencies\n• Give you a daily briefing\n\nTry *"Give me a briefing"* or *"Add Agency Shortlisting cluster"*`);
   }
 }
 
-function saveAIKey() {
-  const k = document.getElementById('ai-key-inp').value.trim();
-  if (!k.startsWith('sk-ant-') && !k.startsWith('sk-')) { toast('Invalid key format'); return; }
-  AI_KEY = k;
-  localStorage.setItem('wm_ai_key', k);
-  document.getElementById('ai-key-row').style.display = 'none';
-  addAIMsg('ai', `Connected! I'm ready. Your WorkMap currently has **${S.cl.length} clusters** and **${allT().length} tasks**.\n\nWhat would you like to do?`, true);
+function saveKey(){
+  const k=document.getElementById('ai-ki').value.trim();
+  if(!k.startsWith('sk-')){toast('Invalid key');return;}
+  AI_KEY=k;localStorage.setItem('wm_ai_key',k);
+  document.getElementById('ai-key-row').style.display='none';
+  addMsg('bot',`Connected! WorkMap has **${S.cl.length} clusters** and **${allT().length} tasks**. What would you like to do?`);
   toast('AI connected ✓');
 }
 
-function togAI() {
-  AI_OPEN = !AI_OPEN;
-  document.getElementById('ai-panel').classList.toggle('open', AI_OPEN);
-  document.getElementById('ai-toggle').textContent = AI_OPEN ? '▼' : '▲';
-  document.getElementById('ai-subtitle').textContent = AI_OPEN ? 'Your intelligent work assistant' : 'Click to open';
-  if (AI_OPEN && !AI_KEY) {
-    document.getElementById('ai-key-row').style.display = 'flex';
-  }
-  if (AI_OPEN) setTimeout(() => document.getElementById('ai-inp').focus(), 300);
+function togAI(){
+  AI_OPEN=!AI_OPEN;
+  document.getElementById('ai-panel').classList.toggle('op',AI_OPEN);
+  document.getElementById('ai-tog').textContent=AI_OPEN?'▼':'▲';
+  document.getElementById('ai-sub').textContent=AI_OPEN?'Your intelligent work assistant':'Click to open';
+  if(AI_OPEN&&!AI_KEY)document.getElementById('ai-key-row').style.display='flex';
+  if(AI_OPEN)setTimeout(()=>document.getElementById('ai-inp').focus(),280);
 }
 
-function addAIMsg(role, text, isFirst=false) {
-  const msgs = document.getElementById('ai-messages');
-  const div = document.createElement('div');
-  div.className = `ai-msg ${role}`;
-  const time = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-  const formatted = formatAIText(text);
-  div.innerHTML = `<div class="ai-bubble">${formatted}</div><div class="ai-time">${time}</div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
+function addMsg(role,text){
+  const msgs=document.getElementById('ai-msgs');
+  const div=document.createElement('div');
+  div.className=`ai-msg ${role}`;
+  const time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  div.innerHTML=`<div class="ai-bub">${fmtAI(text)}</div><div class="ai-time">${time}</div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
   return div;
 }
-
-function formatAIText(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br>')
-    .replace(/^• (.+)/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+function fmtAI(t){
+  return t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>')
+    .replace(/• (.+)/g,'<li>$1</li>');
 }
-
-function showTyping() {
-  const msgs = document.getElementById('ai-messages');
-  const div = document.createElement('div');
-  div.className = 'ai-msg ai'; div.id = 'ai-typing';
-  div.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
-  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+function showTyp(){
+  const msgs=document.getElementById('ai-msgs');
+  const div=document.createElement('div');div.id='ai-typ';div.className='ai-msg bot';
+  div.innerHTML='<div class="ai-typ"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
 }
-function hideTyping() { document.getElementById('ai-typing')?.remove(); }
-
-function showChips(chips) {
-  const msgs = document.getElementById('ai-messages');
-  const div = document.createElement('div');
-  div.className = 'ai-action-row';
-  div.innerHTML = chips.map(c => `<button class="ai-chip" onclick="chipSend('${c}')">${c}</button>`).join('');
-  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+function hideTyp(){document.getElementById('ai-typ')?.remove();}
+function showChips(chips){
+  const msgs=document.getElementById('ai-msgs');
+  const div=document.createElement('div');div.className='ai-chips';
+  div.innerHTML=chips.map(c=>`<button class="ai-chip" onclick="chipSend('${c.replace(/'/g,"\\'")}'">${c}</button>`).join('');
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
 }
+function chipSend(t){document.getElementById('ai-inp').value=t;sendAI();}
 
-function chipSend(text) {
-  document.getElementById('ai-inp').value = text;
-  sendAI();
-}
+async function sendAI(){
+  if(AI_BUSY)return;
+  const inp=document.getElementById('ai-inp');
+  const msg=inp.value.trim();if(!msg)return;
+  if(!AI_KEY){togAI();return;}
+  inp.value='';inp.style.height='34px';
+  addMsg('usr',msg);
+  AI_MSGS.push({role:'user',content:msg});
+  AI_BUSY=true;document.getElementById('ai-send').disabled=true;
+  showTyp();
 
-async function sendAI() {
-  if (AI_BUSY) return;
-  const inp = document.getElementById('ai-inp');
-  const msg = inp.value.trim();
-  if (!msg) return;
-  if (!AI_KEY) { togAI(); return; }
-  inp.value = ''; inp.style.height = '36px';
-  addAIMsg('user', msg);
-  AI_MSGS.push({ role: 'user', content: msg });
-  AI_BUSY = true;
-  document.getElementById('ai-send').disabled = true;
-  showTyping();
+  const ctx=buildCtx();
+  const today=new Date().toISOString().split('T')[0];
 
-  // Build context snapshot of current data
-  const ctx = buildContext();
+  const sys=`You are WorkMap AI, an embedded assistant for Dhruv's WorkMap — a mind-map project tracker. Dhruv is a Marketing Executive at Vimson Derma in Ahmedabad managing pharma/derma marketing projects.
 
-  const systemPrompt = `You are WorkMap AI, an intelligent assistant embedded inside WorkMap — a mind-map project tracker used by Dhruv, a Marketing Executive at Vimson Derma in Ahmedabad. He manages pharma/derma marketing projects.
+TODAY'S DATE: ${today}
 
-CURRENT WORKMAP STATE:
+CURRENT MAP STATE:
 ${ctx}
 
-You have the ability to modify the WorkMap by calling ACTION functions. When you want to make changes, output a JSON block at the END of your message in this exact format:
+You can modify the map by outputting actions in this exact format at the END of your response:
 <ACTIONS>
-[array of action objects]
+[JSON array of action objects]
 </ACTIONS>
 
-Available actions:
-1. Create cluster: {"action":"create_cluster","label":"Name","color":"purple|teal|amber|coral|green|blue|pink|orange","notes":"optional"}
-2. Add task: {"action":"add_task","cluster_label":"exact cluster name","label":"task name","priority":"high|mid|low|","due":"YYYY-MM-DD or empty","notes":"","parent_task":"parent task label or empty"}
-3. Add multiple tasks: {"action":"add_tasks","cluster_label":"Name","tasks":[{"label":"..","priority":"","due":"","notes":"","parent_task":""}]}
-4. Link tasks: {"action":"link_tasks","task1":"exact task label","cluster1":"cluster label","task2":"exact task label","cluster2":"cluster label"}
-5. Mark done: {"action":"mark_done","task_label":"exact label","cluster_label":"cluster label"}
-6. Delete task: {"action":"delete_task","task_label":"exact label","cluster_label":"cluster label"}
+AVAILABLE ACTIONS:
 
-Rules:
-- When user describes a project/work area, CREATE the cluster and ADD relevant tasks automatically
-- For pharma marketing context: suggest tasks that make real-world sense (approvals, vendor coordination, performance tracking, compliance etc.)
-- When adding tasks, also intelligently suggest dependencies and link them
-- For briefing requests: analyze the data and give priority-based advice on what to focus today
-- Be concise in chat, detailed in actions
-- Always confirm what you did after actions
-- If suggesting subtasks, explain WHY each makes sense for that context
-- Use Dhruv's pharma marketing background to make suggestions specific and relevant`;
+1. Create cluster:
+{"action":"create_cluster","label":"Name","color":"purple|teal|amber|coral|green|blue|pink|orange|rose|cyan","notes":""}
 
-  try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': AI_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 2000,
-        system: systemPrompt,
-        messages: AI_MSGS.slice(-12) // keep last 12 for context window
-      })
+2. Add tasks (always use this for multiple):
+{"action":"add_tasks","cluster_label":"exact name","tasks":[{"label":"task","priority":"high|mid|low|","due":"YYYY-MM-DD","notes":"","parent_task":"parent label or empty"}]}
+
+3. Link tasks (dependency):
+{"action":"link_tasks","task1":"label","cluster1":"cluster name","task2":"label","cluster2":"cluster name"}
+
+4. Mark done:
+{"action":"mark_done","task_label":"label","cluster_label":"cluster name"}
+
+5. Create AI diagram card (floating on map):
+{"action":"create_diagram","title":"Diagram title","cluster_link":"optional cluster to connect to","svg":"<svg viewBox='0 0 300 200' xmlns='http://www.w3.org/2000/svg'>...your SVG content...</svg>"}
+
+DATE PARSING RULES (today = ${today}):
+- "next Friday" → compute the actual YYYY-MM-DD
+- "end of month" → last day of current month  
+- "in 2 weeks" → 14 days from today
+- "this week" → Friday of current week
+- Always output resolved YYYY-MM-DD, never relative strings
+
+DIAGRAM RULES:
+- When asked to draw/visualize/diagram anything, create an SVG diagram
+- Use these colors for SVG (work in both light/dark): stroke=#7c6af7, fill=rgba(124,106,247,0.15), text fill=#9090a8
+- Keep SVGs simple and clean — boxes, arrows, labels
+- viewBox should be "0 0 300 180" or "0 0 300 220" max
+- Arrow: <path d="M x1,y1 L x2,y2" stroke="#7c6af7" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+- Always include <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#7c6af7" stroke-width="1.5"/></marker></defs>
+
+SMART LINK DETECTION:
+- After creating tasks, scan for obvious dependencies across clusters
+- Suggest links as part of your response text (not as forced actions)
+- Use create_diagram to visually show relationships when helpful
+
+PHARMA CONTEXT:
+- Vimson Derma = dermatology pharma company
+- Typical tasks: vendor coordination, regulatory approval, MR briefing, sample management, campaign tracking, KOL engagement, booth planning, agency briefing, performance review
+- Be specific to this context, not generic
+
+RULES:
+- Always resolve natural language dates to YYYY-MM-DD
+- When creating clusters, also create 4-6 relevant tasks immediately
+- After any create action, suggest 1-2 smart links if obvious
+- For briefings: be direct, prioritized, actionable — max 150 words
+- Diagrams should be genuinely useful — process flows, dependency maps, timelines
+- Never output more than 8 actions at once`;
+
+  try{
+    const res=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':AI_KEY,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2500,system:sys,messages:AI_MSGS.slice(-14)})
     });
-    const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
-    const raw = data.content[0].text;
-    AI_MSGS.push({ role: 'assistant', content: raw });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    const raw=data.content[0].text;
+    AI_MSGS.push({role:'assistant',content:raw});
 
-    // Parse and execute actions
-    const actionMatch = raw.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
-    let displayText = raw.replace(/<ACTIONS>[\s\S]*?<\/ACTIONS>/g, '').trim();
-    let actionsExecuted = 0;
+    const actMatch=raw.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
+    const display=raw.replace(/<ACTIONS>[\s\S]*?<\/ACTIONS>/g,'').trim();
+    let nAct=0;
 
-    if (actionMatch) {
-      try {
-        const actions = JSON.parse(actionMatch[1].trim());
-        actionsExecuted = await executeActions(actions);
-      } catch(e) { console.error('Action parse error', e); }
+    if(actMatch){
+      try{const acts=JSON.parse(actMatch[1].trim());nAct=await execActions(acts);}
+      catch(e){console.error('Action parse',e);}
     }
 
-    hideTyping();
-    addAIMsg('ai', displayText || 'Done!');
+    hideTyp();
+    if(display)addMsg('bot',display);
 
-    if (actionsExecuted > 0) {
-      const badge = document.createElement('div');
-      badge.innerHTML = `<div class="ai-result-badge">✓ ${actionsExecuted} change${actionsExecuted>1?'s':''} applied to your map</div>`;
-      document.getElementById('ai-messages').appendChild(badge);
-      document.getElementById('ai-messages').scrollTop = 99999;
-      render(); sched();
+    if(nAct>0){
+      const msgs=document.getElementById('ai-msgs');
+      const b=document.createElement('div');
+      b.innerHTML=`<span class="ai-badge">✓ ${nAct} change${nAct>1?'s':''} applied</span>`;
+      msgs.appendChild(b);msgs.scrollTop=msgs.scrollHeight;
+      render();sched();
     }
 
-    // Show contextual follow-up chips
-    const chips = suggestChips(msg, raw);
-    if (chips.length) showChips(chips);
+    // suggest chips
+    const chips=getChips(msg);
+    if(chips.length)showChips(chips);
 
-  } catch(e) {
-    hideTyping();
-    const errMsg = e.message?.includes('401') ? 'Invalid API key. Check your key in the input below.' : 
-                   e.message?.includes('429') ? 'Rate limited — wait a moment and try again.' :
-                   `Error: ${e.message}`;
-    addAIMsg('ai', errMsg);
-    if (e.message?.includes('401')) {
-      AI_KEY = ''; localStorage.removeItem('wm_ai_key');
-      document.getElementById('ai-key-row').style.display = 'flex';
-    }
+    // smart link suggestions after creates
+    if(actMatch&&S.cl.length>1)setTimeout(()=>suggestLinks(),1200);
+
+  }catch(e){
+    hideTyp();
+    const em=e.message?.includes('401')?'Invalid API key — re-enter below.':
+              e.message?.includes('429')?'Rate limited, try again shortly.':
+              `Error: ${e.message}`;
+    addMsg('bot',em);
+    if(e.message?.includes('401')){AI_KEY='';localStorage.removeItem('wm_ai_key');document.getElementById('ai-key-row').style.display='flex';}
   }
-  AI_BUSY = false;
-  document.getElementById('ai-send').disabled = false;
+  AI_BUSY=false;document.getElementById('ai-send').disabled=false;
 }
 
-async function executeActions(actions) {
-  let count = 0;
-  for (const a of actions) {
-    try {
-      if (a.action === 'create_cluster') {
-        const exists = S.cl.find(c => c.label.toLowerCase() === a.label.toLowerCase());
-        if (!exists) {
-          const ang = (S.cl.length * 137.5) * Math.PI / 180, r = 200 + (S.cl.length % 3) * 50;
-          const color = PK.includes(a.color) ? a.color : PK[S.cl.length % PK.length];
-          S.cl.push({ id: uid(), label: a.label, color, notes: a.notes || '', x: S.root.x + Math.cos(ang)*r, y: S.root.y + Math.sin(ang)*r, tasks: [] });
-          count++;
+async function execActions(acts){
+  let n=0;
+  for(const a of acts){
+    try{
+      if(a.action==='create_cluster'){
+        if(!S.cl.find(c=>c.label.toLowerCase()===a.label.toLowerCase())){
+          const W=document.getElementById('map-wrap').clientWidth||800;
+          const H=document.getElementById('map-wrap').clientHeight||550;
+          const ang=(S.cl.length*137.5)*Math.PI/180,r=180+(S.cl.length%4)*60;
+          const col=Object.keys(PAL).includes(a.color)?a.color:PK[S.cl.length%PK.length];
+          S.cl.push({id:uid(),label:a.label,color:col,notes:a.notes||'',
+            x:W/2+Math.cos(ang)*r,y:H/2+Math.sin(ang)*r,tasks:[]});n++;
         }
-      } else if (a.action === 'add_task' || a.action === 'add_tasks') {
-        const c = S.cl.find(cl => cl.label.toLowerCase() === a.cluster_label?.toLowerCase());
-        if (!c) continue;
-        const taskList = a.action === 'add_tasks' ? a.tasks : [{ label: a.label, priority: a.priority || '', due: a.due || '', notes: a.notes || '', parent_task: a.parent_task || '' }];
-        for (const t of taskList) {
-          const newTask = { id: uid(), label: t.label, done: false, priority: t.priority || '', due: t.due || '', notes: t.notes || '', children: [] };
-          if (t.parent_task) {
-            const pr = findInTree(c.tasks, null, null, t.parent_task);
-            if (pr) { if (!pr.children) pr.children = []; pr.children.push(newTask); count++; continue; }
-          }
-          c.tasks.push(newTask); count++;
-        }
-      } else if (a.action === 'link_tasks') {
-        const t1 = findTaskByLabel(a.task1, a.cluster1);
-        const t2 = findTaskByLabel(a.task2, a.cluster2);
-        if (t1 && t2) {
-          const ex = S.deps.findIndex(d => (d.from === t1.id && d.to === t2.id) || (d.from === t2.id && d.to === t1.id));
-          if (ex < 0) { S.deps.push({ from: t1.id, to: t2.id }); count++; }
-        }
-      } else if (a.action === 'mark_done') {
-        const t = findTaskByLabel(a.task_label, a.cluster_label);
-        if (t) { t.done = true; count++; }
-      } else if (a.action === 'delete_task') {
-        const c = S.cl.find(cl => cl.label.toLowerCase() === a.cluster_label?.toLowerCase());
-        if (c) { const idx = c.tasks.findIndex(t => t.label === a.task_label); if (idx >= 0) { c.tasks.splice(idx, 1); count++; } }
       }
-    } catch(e) { console.error('Action error', a, e); }
+      else if(a.action==='add_tasks'){
+        const c=S.cl.find(cl=>cl.label.toLowerCase()===a.cluster_label?.toLowerCase());
+        if(!c)continue;
+        for(const t of a.tasks||[]){
+          const nt={id:uid(),label:t.label,done:false,priority:t.priority||'',due:t.due||'',notes:t.notes||'',children:[],x:null,y:null};
+          if(t.parent_task){
+            const pr=findByLabel(c.tasks,t.parent_task);
+            if(pr){if(!pr.children)pr.children=[];pr.children.push(nt);n++;continue;}
+          }
+          c.tasks.push(nt);n++;
+        }
+      }
+      else if(a.action==='link_tasks'){
+        const t1=findTByLabel(a.task1,a.cluster1),t2=findTByLabel(a.task2,a.cluster2);
+        if(t1&&t2){const ex=S.deps.findIndex(d=>(d.from===t1.id&&d.to===t2.id)||(d.from===t2.id&&d.to===t1.id));
+          if(ex<0){S.deps.push({from:t1.id,to:t2.id});n++;}}
+      }
+      else if(a.action==='mark_done'){
+        const t=findTByLabel(a.task_label,a.cluster_label);if(t){t.done=true;n++;}
+      }
+      else if(a.action==='create_diagram'){
+        S.diagrams.push({
+          id:uid(),title:a.title||'Diagram',
+          svg:a.svg||'',
+          x:200+(S.diagrams.length*40),
+          y:200+(S.diagrams.length*30),
+          w:300,h:200,
+          cluster_link:a.cluster_link||''
+        });n++;
+      }
+    }catch(e){console.error('exec action',a,e);}
   }
-  S.cl.forEach(c => ensureC(c.tasks));
-  return count;
+  S.cl.forEach(c=>ensureC(c.tasks));
+  return n;
 }
 
-function findTaskByLabel(label, clusterLabel) {
-  const c = S.cl.find(cl => !clusterLabel || cl.label.toLowerCase() === clusterLabel.toLowerCase());
-  if (!c) return null;
-  const search = (tasks) => { for (const t of tasks || []) { if (t.label.toLowerCase() === label?.toLowerCase()) return t; const r = search(t.children); if (r) return r; } return null; };
-  return search(c.tasks);
+function findByLabel(tasks,lbl){
+  for(const t of tasks||[]){if(t.label.toLowerCase()===lbl?.toLowerCase())return t;const r=findByLabel(t.children,lbl);if(r)return r;}return null;
+}
+function findTByLabel(lbl,clLbl){
+  const c=S.cl.find(cl=>!clLbl||cl.label.toLowerCase()===clLbl.toLowerCase());
+  if(!c)return null;return findByLabel(c.tasks,lbl);
 }
 
-function findInTree(tasks, tid, par, labelSearch) {
-  for (const t of tasks || []) {
-    if ((tid && t.id === tid) || (labelSearch && t.label.toLowerCase() === labelSearch.toLowerCase())) return t;
-    const r = findInTree(t.children, tid, t, labelSearch);
-    if (r) return r;
-  }
-  return null;
-}
-
-function buildContext() {
-  if (!S.cl.length) return 'No clusters yet. WorkMap is empty.';
-  const all = allT();
-  const now = new Date(); now.setHours(0,0,0,0);
-  const overdue = all.filter(t => !t.done && t.due && new Date(t.due) < now);
-  const high = all.filter(t => !t.done && t.priority === 'high');
-  const done = all.filter(t => t.done).length;
-  let ctx = `CLUSTERS (${S.cl.length}):\n`;
-  S.cl.forEach(c => {
-    const {d, t} = countT(c.tasks);
-    ctx += `\n[${c.label}] ${d}/${t} done\n`;
-    const listT = (tasks, indent='  ') => { (tasks||[]).forEach(t => { ctx += `${indent}${t.done?'✓':'○'} ${t.label}${t.priority?' ['+t.priority+']':''}${t.due?' due:'+t.due:''}\n`; listT(t.children, indent+'  '); }); };
-    listT(c.tasks);
+function buildCtx(){
+  if(!S.cl.length)return'Map is empty.';
+  const all=allT();const now=new Date();now.setHours(0,0,0,0);
+  const ov=all.filter(t=>!t.done&&t.due&&new Date(t.due)<now);
+  let ctx=`CLUSTERS:\n`;
+  S.cl.forEach(c=>{
+    const{d,t}=countT(c.tasks);ctx+=`\n[${c.label}] ${d}/${t}\n`;
+    const ls=(tasks,ind='  ')=>(tasks||[]).forEach(t=>{
+      ctx+=`${ind}${t.done?'✓':'○'} ${t.label}${t.priority?` [${t.priority}]`:''}${t.due?` due:${t.due}`:''}\n`;
+      ls(t.children,ind+'  ');});
+    ls(c.tasks);
   });
-  ctx += `\nSUMMARY: ${all.length} total, ${done} done, ${all.length-done} pending, ${overdue.length} overdue, ${high.length} high priority`;
-  if (S.deps.length) ctx += `\nDEPENDENCIES: ${S.deps.length} task links exist`;
+  ctx+=`\nOVERDUE: ${ov.length} | DEPS: ${S.deps.length} links | DIAGRAMS: ${S.diagrams.length}`;
   return ctx;
 }
 
-function suggestChips(userMsg, aiResponse) {
-  const u = userMsg.toLowerCase();
-  if (u.includes('briefing') || u.includes('focus')) return ['What is blocked?', 'Show overdue tasks', 'Suggest next actions'];
-  if (u.includes('suggest') || u.includes('subtask')) return ['Link these tasks', 'Add more tasks', 'Give me a briefing'];
-  if (u.includes('create') || u.includes('add') || u.includes('cluster')) return ['Suggest subtasks', 'Link dependencies', 'Give me a briefing'];
-  if (S.cl.length === 0) return ['Create CMPL Expo cluster', 'Create Marketing Budget cluster', 'Give me a briefing'];
-  return ['Give me a briefing', 'Suggest subtasks', 'What should I focus on today?'];
+function suggestLinks(){
+  // find tasks with similar keywords across clusters — suggest linking
+  const all=allT().filter(t=>!t.done);
+  const keywords=['approval','budget','agency','vendor','brief','review','sign','launch','final','confirm'];
+  const matches=[];
+  for(let i=0;i<all.length;i++){
+    for(let j=i+1;j<all.length;j++){
+      if(all[i]._cl?.id===all[j]._cl?.id)continue;
+      const la=all[i].label.toLowerCase(),lb=all[j].label.toLowerCase();
+      for(const kw of keywords){
+        if(la.includes(kw)&&lb.includes(kw)){
+          const ex=S.deps.find(d=>(d.from===all[i].id&&d.to===all[j].id)||(d.from===all[j].id&&d.to===all[i].id));
+          if(!ex)matches.push({a:all[i],b:all[j]});
+          break;
+        }
+      }
+    }
+  }
+  if(!matches.length)return;
+  const m=matches[0]; // suggest first match
+  const msgs=document.getElementById('ai-msgs');
+  const div=document.createElement('div');
+  div.className='link-suggest';
+  div.innerHTML=`🔗 Possible dependency: <strong>${m.a.label}</strong> → <strong>${m.b.label}</strong><button class="link-yes" onclick="confirmLink('${m.a.id}','${m.b.id}',this.parentElement)">Link</button><button class="link-no" onclick="this.parentElement.remove()">Dismiss</button>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function confirmLink(id1,id2,el){
+  S.deps.push({from:id1,to:id2});el.remove();render();sched();toast('Tasks linked ✓');
 }
 
+function getChips(msg){
+  const u=msg.toLowerCase();
+  if(u.includes('briefing')||u.includes('focus'))return['What is blocked?','Suggest next actions','Show high priority'];
+  if(u.includes('diagram')||u.includes('draw')||u.includes('flow'))return['Link dependencies','Give me a briefing'];
+  if(u.includes('suggest')||u.includes('subtask'))return['Link these tasks','Give me a briefing'];
+  if(u.includes('create')||u.includes('add')||u.includes('cluster'))return['Suggest subtasks','Detect dependencies','Give me a briefing'];
+  if(S.cl.length===0)return['Add CMPL Expo cluster','Add Marketing Budget cluster','Give me a briefing'];
+  return['Give me a briefing','Suggest subtasks','Draw approval flowchart'];
+}
 </script>
 </body>
 </html>
