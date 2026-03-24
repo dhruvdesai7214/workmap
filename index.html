@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkMap — Your Work, Visualised</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f11;--bg2:#16161a;--bg3:#1e1e24;--bg4:#26262e;
+  --border:#2e2e38;--border2:#3a3a48;
+  --text:#e8e8f0;--text2:#9898b0;--text3:#5a5a72;
+  --accent:#7c6af7;--accent2:#5c4fd6;--accent-glow:#7c6af722;
+  --green:#3ecf8e;--amber:#f59e0b;--coral:#f87171;--blue:#60a5fa;--pink:#e879f9;--teal:#2dd4bf;
+  --radius:10px;--radius-sm:6px;--radius-lg:16px;
+  --font:'Inter',system-ui,sans-serif;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+input,textarea,select{font-family:var(--font);outline:none}
+
+/* ── TOP BAR ─────────────────────────────────────────────── */
+#topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:100}
+#logo{font-size:16px;font-weight:700;color:var(--accent);letter-spacing:-.02em;margin-right:8px}
+#logo span{color:var(--text2);font-weight:400}
+.view-btn{font-size:12px;padding:5px 12px;border-radius:var(--radius-sm);background:transparent;color:var(--text2);border:1px solid transparent;transition:all .15s}
+.view-btn.active,.view-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border)}
+#save-status{margin-left:auto;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.dot.saving{background:var(--amber);animation:pulse .8s infinite}
+.dot.error{background:var(--coral)}
+#setup-btn{font-size:11px;padding:5px 10px;border-radius:var(--radius-sm);background:var(--amber);color:#000;font-weight:600}
+#add-project-btn{font-size:12px;padding:6px 14px;border-radius:var(--radius-sm);background:var(--accent);color:#fff;font-weight:500;transition:background .15s}
+#add-project-btn:hover{background:var(--accent2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── MAIN LAYOUT ─────────────────────────────────────────── */
+#main{flex:1;display:flex;overflow:hidden;position:relative}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+#sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+#sidebar-header{padding:14px 14px 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+#project-list{flex:1;overflow-y:auto;padding:4px 8px 8px}
+.proj-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--radius-sm);cursor:pointer;transition:background .12s;position:relative}
+.proj-item:hover,.proj-item.active{background:var(--bg4)}
+.proj-item.active{background:var(--bg3)}
+.proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.proj-name{font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-pct{font-size:10px;color:var(--text3)}
+.proj-item .proj-del{opacity:0;font-size:10px;padding:2px 5px;background:var(--coral);color:#fff;border-radius:3px;border:none}
+.proj-item:hover .proj-del{opacity:.7}
+
+/* ── CANVAS AREA ─────────────────────────────────────────── */
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);background-image:radial-gradient(circle,var(--border) 1px,transparent 1px);background-size:28px 28px}
+#canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+svg#graph{width:100%;height:100%}
+
+/* ── CONTROLS ─────────────────────────────────────────────── */
+#canvas-controls{position:absolute;bottom:16px;left:16px;display:flex;gap:6px;z-index:20}
+.ctrl-btn{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ctrl-btn:hover{background:var(--bg4);color:var(--text)}
+#zoom-label{font-size:11px;color:var(--text3);padding:0 8px;align-self:center}
+
+/* ── DETAIL PANEL ─────────────────────────────────────────── */
+#panel{position:absolute;right:0;top:0;bottom:0;width:320px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:50;overflow:hidden}
+#panel.open{transform:translateX(0)}
+#panel-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+#panel-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px}
+#panel-title-input{flex:1;font-size:16px;font-weight:600;background:transparent;border:none;color:var(--text);padding:0}
+#panel-close{width:26px;height:26px;border-radius:var(--radius-sm);background:var(--bg4);color:var(--text2);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#panel-close:hover{color:var(--text)}
+#panel-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+
+/* Panel sections */
+.p-section{}
+.p-label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+#panel-notes{width:100%;min-height:70px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-size:13px;resize:vertical;line-height:1.5}
+#panel-notes:focus{border-color:var(--accent)}
+
+/* Progress */
+.prog-row{display:flex;align-items:center;gap:8px}
+.prog-track{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s}
+.prog-pct{font-size:12px;color:var(--text2);min-width:32px;text-align:right}
+
+/* Meta row */
+.meta-row{display:flex;gap:8px;flex-wrap:wrap}
+.meta-chip{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 9px;border-radius:99px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)}
+.meta-chip select,.meta-chip input[type=date]{background:transparent;border:none;color:var(--text2);font-size:11px;font-family:var(--font);padding:0;cursor:pointer}
+.meta-chip select option{background:var(--bg3)}
+
+/* Tasks */
+.task-list-inner{display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);transition:border-color .12s;cursor:default;position:relative}
+.task-item:hover{border-color:var(--border2)}
+.task-item.dragging-task{opacity:.4}
+.task-item.drag-over{border-color:var(--accent);background:var(--accent-glow)}
+.task-cb{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border2);background:transparent;flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.task-cb.checked{background:var(--green);border-color:var(--green)}
+.task-cb.checked::after{content:'✓';font-size:9px;color:#fff}
+.task-text-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
+.task-label{font-size:13px;color:var(--text);line-height:1.4;background:transparent;border:none;width:100%;padding:0}
+.task-label:focus{outline:none}
+.task-done .task-label{text-decoration:line-through;color:var(--text3)}
+.task-meta-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.task-date{font-size:10px;color:var(--text3)}
+.task-date.overdue{color:var(--coral)}
+.task-date.soon{color:var(--amber)}
+.task-priority{font-size:9px;padding:1px 5px;border-radius:99px;font-weight:600}
+.p-high{background:rgba(248,113,113,.15);color:var(--coral)}
+.p-mid{background:rgba(245,158,11,.15);color:var(--amber)}
+.p-low{background:rgba(62,207,142,.15);color:var(--green)}
+.task-actions{display:flex;gap:3px;opacity:0;transition:opacity .12s}
+.task-item:hover .task-actions{opacity:1}
+.task-act-btn{width:20px;height:20px;border-radius:3px;background:var(--bg4);color:var(--text3);font-size:10px;display:flex;align-items:center;justify-content:center;border:none}
+.task-act-btn:hover{color:var(--text)}
+
+/* Add task */
+.add-task-row{display:flex;gap:6px;margin-top:6px}
+.add-task-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:13px;transition:border-color .15s}
+.add-task-input:focus{border-color:var(--accent)}
+.add-task-btn{padding:7px 12px;background:var(--accent);color:#fff;border-radius:var(--radius-sm);font-size:13px;font-weight:500;transition:background .15s}
+.add-task-btn:hover{background:var(--accent2)}
+
+/* Move task dropdown */
+.move-select{font-size:11px;background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);padding:3px 6px}
+.move-select option{background:var(--bg3)}
+
+/* Panel actions */
+#panel-footer{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px}
+.panel-del-btn{font-size:12px;padding:7px 12px;background:rgba(248,113,113,.12);color:var(--coral);border-radius:var(--radius-sm);border:1px solid rgba(248,113,113,.25);transition:all .15s}
+.panel-del-btn:hover{background:rgba(248,113,113,.22)}
+.panel-add-sub-btn{flex:1;font-size:12px;padding:7px 12px;background:var(--bg4);color:var(--text2);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.panel-add-sub-btn:hover{color:var(--text);background:var(--bg3)}
+
+/* ── LIST VIEW ───────────────────────────────────────────── */
+#list-view{flex:1;overflow-y:auto;padding:20px;display:none;flex-direction:column;gap:16px}
+#list-view.active{display:flex}
+.lv-project{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.lv-proj-header{padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .12s}
+.lv-proj-header:hover{background:var(--bg3)}
+.lv-proj-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.lv-proj-name{font-size:15px;font-weight:600;flex:1}
+.lv-prog-small{font-size:11px;color:var(--text3)}
+.lv-chevron{color:var(--text3);font-size:12px;transition:transform .2s}
+.lv-chevron.open{transform:rotate(90deg)}
+.lv-tasks{padding:0 16px 12px;display:none;flex-direction:column;gap:3px}
+.lv-tasks.open{display:flex}
+.lv-task{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border);cursor:pointer}
+.lv-task:last-child{border:none}
+.lv-task-done{text-decoration:line-through;color:var(--text3)}
+.lv-task-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ── SETUP MODAL ─────────────────────────────────────────── */
+#setup-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+#setup-modal.hidden{display:none}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:480px;max-width:95vw;display:flex;flex-direction:column;gap:16px}
+.modal-box h2{font-size:20px;font-weight:700;color:var(--text)}
+.modal-box p{font-size:13px;color:var(--text2);line-height:1.6}
+.modal-box a{color:var(--accent)}
+.modal-field{display:flex;flex-direction:column;gap:5px}
+.modal-field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.modal-field input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-size:13px}
+.modal-field input:focus{border-color:var(--accent);outline:none}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.modal-save{padding:8px 20px;background:var(--accent);color:#fff;border-radius:var(--radius-sm);font-size:13px;font-weight:500}
+.modal-skip{padding:8px 16px;background:var(--bg4);color:var(--text2);border-radius:var(--radius-sm);font-size:13px;border:1px solid var(--border)}
+.step-list{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm)}
+.step-list li{font-size:12px;color:var(--text2);margin-left:16px;line-height:1.7}
+.step-list li code{background:var(--bg4);padding:1px 5px;border-radius:3px;font-size:11px;color:var(--accent)}
+
+/* ── NEW PROJECT MODAL ───────────────────────────────────── */
+#np-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+#np-modal.open{display:flex}
+.color-picker{display:flex;gap:6px;flex-wrap:wrap}
+.color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .12s}
+.color-swatch.selected{border-color:var(--text)}
+
+/* ── TASK EDIT MODAL ─────────────────────────────────────── */
+#te-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+#te-modal.open{display:flex}
+
+/* ── SVG NODES ───────────────────────────────────────────── */
+.cluster-g{cursor:pointer}
+.cluster-g:hover .cluster-ellipse{filter:brightness(1.2)}
+.root-g{cursor:default}
+.task-dot-g{cursor:pointer}
+.task-dot-g:hover circle{filter:brightness(1.3)}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 18px;font-size:13px;color:var(--text);z-index:300;transition:transform .25s cubic-bezier(.4,0,.2,1);pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="logo">Work<span>Map</span></div>
+  <button class="view-btn active" id="btn-map" onclick="switchView('map')">Map</button>
+  <button class="view-btn" id="btn-list" onclick="switchView('list')">List</button>
+  <button id="add-project-btn" onclick="openNewProject()">+ New cluster</button>
+  <button id="setup-btn" onclick="openSetup()" style="display:none">⚙ Connect DB</button>
+  <div id="save-status"><div class="dot" id="status-dot"></div><span id="status-text">Saved</span></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">Clusters</div>
+    <div id="project-list"></div>
+  </div>
+
+  <!-- Map view -->
+  <div id="canvas-wrap">
+    <div id="canvas"><svg id="graph"></svg></div>
+    <div id="canvas-controls">
+      <button class="ctrl-btn" onclick="zoom(1.15)" title="Zoom in">+</button>
+      <span id="zoom-label">100%</span>
+      <button class="ctrl-btn" onclick="zoom(1/1.15)" title="Zoom out">−</button>
+      <button class="ctrl-btn" onclick="resetView()" title="Reset view">⊙</button>
+    </div>
+  </div>
+
+  <!-- List view -->
+  <div id="list-view"></div>
+
+  <!-- Detail panel -->
+  <div id="panel">
+    <div id="panel-header">
+      <div id="panel-color-dot"></div>
+      <input id="panel-title-input" placeholder="Cluster name..." onchange="updateClusterTitle(this.value)">
+      <button id="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div id="panel-body"></div>
+    <div id="panel-footer">
+      <button class="panel-del-btn" onclick="deleteCluster()">Delete cluster</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div id="setup-modal">
+  <div class="modal-box">
+    <h2>Connect your database</h2>
+    <p>WorkMap uses <strong>Supabase</strong> (free tier) to save your data so it's available on all your devices. Takes 3 minutes to set up.</p>
+    <ol class="step-list">
+      <li>Go to <a href="https://supabase.com" target="_blank">supabase.com</a> → New project (free)</li>
+      <li>In your project → <strong>SQL Editor</strong> → paste and run the setup SQL below</li>
+      <li>Go to <strong>Project Settings → API</strong> and copy your URL and anon key</li>
+    </ol>
+    <details style="margin:-4px 0">
+      <summary style="font-size:12px;color:var(--accent);cursor:pointer;padding:4px 0">Show setup SQL</summary>
+      <pre id="setup-sql" style="margin-top:8px;background:var(--bg3);padding:12px;border-radius:6px;font-size:11px;color:var(--text2);overflow-x:auto;white-space:pre;line-height:1.6">create table if not exists workmap_data (
+  id text primary key default 'main',
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+insert into workmap_data (id, data)
+values ('main', '{"clusters":[]}'::jsonb)
+on conflict (id) do nothing;</pre>
+      <button onclick="copySql()" style="margin-top:6px;font-size:11px;padding:4px 10px;background:var(--bg4);color:var(--text2);border-radius:4px;border:1px solid var(--border)">Copy SQL</button>
+    </details>
+    <div class="modal-field">
+      <label>Supabase URL</label>
+      <input id="sb-url" placeholder="https://xxxx.supabase.co" type="url">
+    </div>
+    <div class="modal-field">
+      <label>Anon Key</label>
+      <input id="sb-key" placeholder="eyJhbGci..." type="password">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-skip" onclick="skipSetup()">Use locally (no sync)</button>
+      <button class="modal-save" onclick="saveSetup()">Connect & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW PROJECT MODAL -->
+<div id="np-modal">
+  <div class="modal-box">
+    <h2>New cluster</h2>
+    <div class="modal-field">
+      <label>Name</label>
+      <input id="np-name" placeholder="e.g. Marketing Budget Approval" autofocus onkeydown="if(event.key==='Enter')saveNewProject()">
+    </div>
+    <div class="modal-field">
+      <label>Color</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+    <div class="modal-field">
+      <label>Notes (optional)</label>
+      <input id="np-notes" placeholder="Any context or description...">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-skip" onclick="closeNewProject()">Cancel</button>
+      <button class="modal-save" onclick="saveNewProject()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK EDIT MODAL -->
+<div id="te-modal">
+  <div class="modal-box">
+    <h2>Edit task</h2>
+    <div class="modal-field">
+      <label>Task</label>
+      <input id="te-label" placeholder="Task description">
+    </div>
+    <div class="modal-field">
+      <label>Due date</label>
+      <input id="te-date" type="date">
+    </div>
+    <div class="modal-field">
+      <label>Priority</label>
+      <select id="te-priority" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-size:13px">
+        <option value="">None</option>
+        <option value="high">High</option>
+        <option value="mid">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Move to cluster</label>
+      <select id="te-move" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-size:13px"></select>
+    </div>
+    <div class="modal-field">
+      <label>Notes</label>
+      <textarea id="te-notes" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-size:13px;resize:vertical;min-height:70px;width:100%;line-height:1.5"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-skip panel-del-btn" onclick="deleteTask()" style="margin-right:auto">Delete</button>
+      <button class="modal-skip" onclick="closeTaskEdit()">Cancel</button>
+      <button class="modal-save" onclick="saveTaskEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG & SUPABASE
+// ══════════════════════════════════════════════════════════════
+let supabaseClient = null;
+let CONFIG = { url:'', key:'' };
+
+const PALETTE = {
+  purple:'#7c6af7', teal:'#2dd4bf', amber:'#f59e0b', coral:'#f87171',
+  green:'#3ecf8e', blue:'#60a5fa', pink:'#e879f9', orange:'#fb923c'
+};
+const PALETTE_KEYS = Object.keys(PALETTE);
+
+function initSupabase() {
+  const stored = localStorage.getItem('wm_sb_config');
+  if (stored) {
+    try {
+      CONFIG = JSON.parse(stored);
+      if (CONFIG.url && CONFIG.key) {
+        supabaseClient = supabase.createClient(CONFIG.url, CONFIG.key);
+        return true;
+      }
+    } catch(e){}
+  }
+  return false;
+}
+
+async function loadFromSupabase() {
+  if (!supabaseClient) return false;
+  try {
+    const { data, error } = await supabaseClient
+      .from('workmap_data').select('data').eq('id','main').single();
+    if (error) throw error;
+    if (data && data.data) {
+      STATE.clusters = data.data.clusters || [];
+      return true;
+    }
+  } catch(e) { console.error('Load error', e); }
+  return false;
+}
+
+async function saveToSupabase() {
+  if (!supabaseClient) {
+    saveLocal(); return;
+  }
+  setStatus('saving');
+  try {
+    const { error } = await supabaseClient
+      .from('workmap_data')
+      .upsert({ id:'main', data: { clusters: STATE.clusters }, updated_at: new Date().toISOString() });
+    if (error) throw error;
+    setStatus('saved');
+  } catch(e) {
+    console.error('Save error', e);
+    setStatus('error');
+    saveLocal();
+  }
+}
+
+function saveLocal() {
+  localStorage.setItem('wm_data', JSON.stringify({ clusters: STATE.clusters }));
+}
+
+function loadLocal() {
+  try {
+    const d = localStorage.getItem('wm_data');
+    if (d) { const p = JSON.parse(d); STATE.clusters = p.clusters || []; return true; }
+  } catch(e) {}
+  return false;
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=> { saveToSupabase(); saveLocal(); }, 800);
+}
+
+function setStatus(s) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'dot' + (s==='saving' ? ' saving' : s==='error' ? ' error' : '');
+  txt.textContent = s==='saving' ? 'Saving...' : s==='error' ? 'Save failed' : 'Saved';
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+const STATE = {
+  clusters: [],
+  selectedId: null,
+  view: 'map',
+  zoom: 1,
+  pan: { x: 0, y: 0 },
+  rootPos: { x: 0, y: 0 }, // set on first render
+};
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function getCluster(id) { return STATE.clusters.find(c=>c.id===id); }
+function getTask(cid,tid) { return getCluster(cid)?.tasks?.find(t=>t.id===tid); }
+
+// ══════════════════════════════════════════════════════════════
+// SETUP MODAL
+// ══════════════════════════════════════════════════════════════
+function openSetup() { document.getElementById('setup-modal').classList.remove('hidden'); }
+function copySql() {
+  const sql = document.getElementById('setup-sql').textContent;
+  navigator.clipboard.writeText(sql).then(()=>toast('SQL copied!'));
+}
+
+function skipSetup() {
+  document.getElementById('setup-modal').classList.add('hidden');
+  document.getElementById('setup-btn').style.display = 'flex';
+  toast('Using local storage — data stays on this device only');
+  loadLocal(); render();
+}
+
+async function saveSetup() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url || !key) { toast('Please fill in both fields'); return; }
+  CONFIG = { url, key };
+  localStorage.setItem('wm_sb_config', JSON.stringify(CONFIG));
+  supabaseClient = supabase.createClient(url, key);
+  const ok = await loadFromSupabase();
+  if (ok) {
+    document.getElementById('setup-modal').classList.add('hidden');
+    toast('Connected! Your data is synced.');
+    render();
+  } else {
+    toast('Connection failed — check your URL and key');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// NEW PROJECT
+// ══════════════════════════════════════════════════════════════
+let selectedColor = PALETTE_KEYS[0];
+
+function openNewProject() {
+  selectedColor = PALETTE_KEYS[Math.floor(Math.random()*PALETTE_KEYS.length)];
+  // build color picker
+  const cp = document.getElementById('color-picker');
+  cp.innerHTML = PALETTE_KEYS.map(k=>`
+    <div class="color-swatch${k===selectedColor?' selected':''}" style="background:${PALETTE[k]}"
+      onclick="selectColor('${k}',this)"></div>`).join('');
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-notes').value = '';
+  document.getElementById('np-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('np-name').focus(), 50);
+}
+function closeNewProject() { document.getElementById('np-modal').classList.remove('open'); }
+function selectColor(k, el) {
+  selectedColor = k;
+  document.querySelectorAll('.color-swatch').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function saveNewProject() {
+  const name = document.getElementById('np-name').value.trim();
+  if (!name) { toast('Give the cluster a name'); return; }
+  // place it in a nice position around root
+  const angle = (STATE.clusters.length * 137.5) * Math.PI / 180;
+  const r = 200 + (STATE.clusters.length % 3) * 40;
+  const cx = STATE.rootPos.x + Math.cos(angle) * r;
+  const cy = STATE.rootPos.y + Math.sin(angle) * r;
+  STATE.clusters.push({
+    id: uid(), label: name, color: selectedColor, notes: document.getElementById('np-notes').value.trim(),
+    x: cx, y: cy, tasks: []
+  });
+  closeNewProject();
+  render(); scheduleSave();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLUSTER PANEL
+// ══════════════════════════════════════════════════════════════
+function openPanel(cid) {
+  STATE.selectedId = cid;
+  const c = getCluster(cid);
+  document.getElementById('panel-color-dot').style.background = PALETTE[c.color]||c.color;
+  document.getElementById('panel-title-input').value = c.label;
+  renderPanel(); renderSidebar();
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel() {
+  STATE.selectedId = null;
+  document.getElementById('panel').classList.remove('open');
+  renderSidebar();
+}
+
+function updateClusterTitle(v) {
+  if (!STATE.selectedId) return;
+  getCluster(STATE.selectedId).label = v;
+  render(); scheduleSave();
+}
+
+function deleteCluster() {
+  if (!STATE.selectedId) return;
+  if (!confirm('Delete this cluster and all its tasks?')) return;
+  STATE.clusters = STATE.clusters.filter(c=>c.id!==STATE.selectedId);
+  closePanel(); render(); scheduleSave();
+}
+
+function renderPanel() {
+  const c = getCluster(STATE.selectedId);
+  if (!c) return;
+  const done = c.tasks.filter(t=>t.done).length;
+  const total = c.tasks.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const col = PALETTE[c.color]||c.color;
+  const now = new Date(); now.setHours(0,0,0,0);
+
+  let html = `
+    <div class="p-section">
+      <div class="p-label">Progress</div>
+      <div class="prog-row">
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="prog-pct">${pct}%</div>
+      </div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">Notes</div>
+      <textarea id="panel-notes" placeholder="Context, links, decisions..."
+        onchange="updateClusterNotes(this.value)">${c.notes||''}</textarea>
+    </div>
+    <div class="p-section">
+      <div class="p-label">Tasks <span style="color:var(--text3);font-weight:400">${done}/${total}</span></div>
+      <div class="task-list-inner" id="task-list-inner">
+        ${c.tasks.map(t=>{
+          let dateClass='task-date', dateStr='';
+          if (t.due) {
+            const d = new Date(t.due); d.setHours(0,0,0,0);
+            const diff = Math.round((d-now)/(86400000));
+            dateStr = t.due;
+            if (diff < 0) dateClass='task-date overdue';
+            else if (diff <= 3) dateClass='task-date soon';
+          }
+          return `
+          <div class="task-item${t.done?' task-done':''}" id="ti-${t.id}"
+            draggable="true"
+            ondragstart="dragTaskStart(event,'${c.id}','${t.id}')"
+            ondragover="dragTaskOver(event,'${t.id}')"
+            ondragleave="dragTaskLeave(event,'${t.id}')"
+            ondrop="dropTask(event,'${c.id}','${t.id}')">
+            <div class="task-cb${t.done?' checked':''}" onclick="toggleTask('${c.id}','${t.id}')"></div>
+            <div class="task-text-wrap">
+              <div class="task-label">${escHtml(t.label)}</div>
+              <div class="task-meta-line">
+                ${t.priority?`<span class="task-priority p-${t.priority}">${t.priority==='high'?'↑ High':t.priority==='mid'?'→ Mid':'↓ Low'}</span>`:''}
+                ${dateStr?`<span class="${dateClass}">${dateStr}</span>`:''}
+                ${t.notes?`<span style="font-size:10px;color:var(--text3)">📝</span>`:''}
+              </div>
+            </div>
+            <div class="task-actions">
+              <button class="task-act-btn" onclick="openTaskEdit('${c.id}','${t.id}')" title="Edit">✎</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="add-task-row">
+        <input class="add-task-input" id="new-task-inp" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTask()">
+        <button class="add-task-btn" onclick="addTask()">Add</button>
+      </div>
+    </div>`;
+  document.getElementById('panel-body').innerHTML = html;
+}
+
+function updateClusterNotes(v) {
+  if (!STATE.selectedId) return;
+  getCluster(STATE.selectedId).notes = v;
+  scheduleSave();
+}
+
+function toggleTask(cid, tid) {
+  const t = getTask(cid, tid);
+  t.done = !t.done;
+  renderPanel(); render(); renderSidebar(); scheduleSave();
+}
+
+function addTask() {
+  const inp = document.getElementById('new-task-inp');
+  const label = inp.value.trim();
+  if (!label) return;
+  getCluster(STATE.selectedId).tasks.push({ id:uid(), label, done:false, priority:'', due:'', notes:'' });
+  inp.value = '';
+  renderPanel(); render(); renderSidebar(); scheduleSave();
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── TASK DRAG (move between clusters from panel) ──────────────
+let dragSrc = null;
+function dragTaskStart(e, cid, tid) { dragSrc = { cid, tid }; e.dataTransfer.effectAllowed='move'; }
+function dragTaskOver(e, tid) { e.preventDefault(); document.getElementById('ti-'+tid)?.classList.add('drag-over'); }
+function dragTaskLeave(e, tid) { document.getElementById('ti-'+tid)?.classList.remove('drag-over'); }
+function dropTask(e, cid, targetTid) {
+  e.preventDefault();
+  document.getElementById('ti-'+targetTid)?.classList.remove('drag-over');
+  if (!dragSrc || (dragSrc.cid===cid && dragSrc.tid===targetTid)) return;
+  const srcCluster = getCluster(dragSrc.cid);
+  const tIdx = srcCluster.tasks.findIndex(t=>t.id===dragSrc.tid);
+  const [task] = srcCluster.tasks.splice(tIdx, 1);
+  const dstCluster = getCluster(cid);
+  const dstIdx = dstCluster.tasks.findIndex(t=>t.id===targetTid);
+  dstCluster.tasks.splice(dstIdx, 0, task);
+  dragSrc = null;
+  renderPanel(); render(); renderSidebar(); scheduleSave();
+}
+
+// ── TASK EDIT MODAL ────────────────────────────────────────────
+let editCtx = null;
+function openTaskEdit(cid, tid) {
+  editCtx = { cid, tid };
+  const t = getTask(cid, tid);
+  document.getElementById('te-label').value = t.label;
+  document.getElementById('te-date').value = t.due||'';
+  document.getElementById('te-priority').value = t.priority||'';
+  document.getElementById('te-notes').value = t.notes||'';
+  // populate move dropdown
+  const sel = document.getElementById('te-move');
+  sel.innerHTML = STATE.clusters.map(c=>`<option value="${c.id}"${c.id===cid?' selected':''}>${c.label}</option>`).join('');
+  document.getElementById('te-modal').classList.add('open');
+}
+function closeTaskEdit() { document.getElementById('te-modal').classList.remove('open'); editCtx=null; }
+function saveTaskEdit() {
+  if (!editCtx) return;
+  const { cid, tid } = editCtx;
+  const t = getTask(cid, tid);
+  t.label = document.getElementById('te-label').value.trim() || t.label;
+  t.due = document.getElementById('te-date').value;
+  t.priority = document.getElementById('te-priority').value;
+  t.notes = document.getElementById('te-notes').value.trim();
+  // move if needed
+  const newCid = document.getElementById('te-move').value;
+  if (newCid !== cid) {
+    const srcC = getCluster(cid);
+    const idx = srcC.tasks.findIndex(x=>x.id===tid);
+    const [moved] = srcC.tasks.splice(idx,1);
+    getCluster(newCid).tasks.push(moved);
+    if (STATE.selectedId === cid) renderPanel();
+    else openPanel(newCid);
+  } else { renderPanel(); }
+  closeTaskEdit(); render(); renderSidebar(); scheduleSave();
+}
+function deleteTask() {
+  if (!editCtx) return;
+  const { cid, tid } = editCtx;
+  const c = getCluster(cid);
+  c.tasks = c.tasks.filter(t=>t.id!==tid);
+  closeTaskEdit(); renderPanel(); render(); renderSidebar(); scheduleSave();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════════════════════
+function renderSidebar() {
+  const el = document.getElementById('project-list');
+  if (!STATE.clusters.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 8px">No clusters yet</div>';
+    return;
+  }
+  el.innerHTML = STATE.clusters.map(c=>{
+    const done = c.tasks.filter(t=>t.done).length;
+    const total = c.tasks.length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    return `<div class="proj-item${STATE.selectedId===c.id?' active':''}" onclick="openPanel('${c.id}')">
+      <div class="proj-dot" style="background:${PALETTE[c.color]||c.color}"></div>
+      <div class="proj-name">${escHtml(c.label)}</div>
+      <div class="proj-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAP RENDER
+// ══════════════════════════════════════════════════════════════
+const CW = 700, CH = 560;
+const ROOT_R = 48;
+const CL_RX = 68, CL_RY = 30;
+const TASK_R = 8;
+
+function getSvgCoords() {
+  const wrap = document.getElementById('canvas-wrap');
+  return { w: wrap.clientWidth || CW, h: wrap.clientHeight || CH };
+}
+
+function render() {
+  if (STATE.view !== 'map') { renderListView(); renderSidebar(); return; }
+  const { w, h } = getSvgCoords();
+  const cx = w / 2, cy = h / 2;
+  STATE.rootPos = { x: cx, y: cy };
+  const g = document.getElementById('graph');
+  g.innerHTML = '';
+  g.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+  const wrap = document.createElementNS('http://www.w3.org/2000/svg','g');
+  wrap.setAttribute('transform', `translate(${STATE.pan.x},${STATE.pan.y}) scale(${STATE.zoom})`);
+  g.appendChild(wrap);
+
+  // Draw edges first
+  STATE.clusters.forEach(c => {
+    const line = svgEl('line');
+    attrs(line,{x1:cx,y1:cy,x2:c.x,y2:c.y,stroke:'#2e2e44',
+      'stroke-width':'1','stroke-dasharray':'4 4'});
+    wrap.appendChild(line);
+    // task lines
+    taskPositions(c).forEach(tp=>{
+      const tl = svgEl('line');
+      attrs(tl,{x1:c.x,y1:c.y,x2:tp.x,y2:tp.y,stroke:'#2a2a3a','stroke-width':'0.8'});
+      wrap.appendChild(tl);
+    });
+  });
+
+  // Draw task dots
+  STATE.clusters.forEach(c => {
+    const col = PALETTE[c.color]||c.color;
+    taskPositions(c).forEach((tp,i)=>{
+      const t = c.tasks[i];
+      const tg = svgEl('g'); tg.classList.add('task-dot-g');
+      const circ = svgEl('circle');
+      attrs(circ,{cx:tp.x,cy:tp.y,r:TASK_R,
+        fill: t.done ? col : (t.status==='ip'? col+'88':'#16161a'),
+        stroke: t.done ? col : col+'88', 'stroke-width':'1.5'});
+      tg.appendChild(circ);
+      if (t.done) {
+        const ck = svgEl('text');
+        attrs(ck,{x:tp.x,y:tp.y,'text-anchor':'middle','dominant-baseline':'central',
+          'font-size':'8','fill':'#fff','pointer-events':'none'});
+        ck.textContent='✓'; tg.appendChild(ck);
+      }
+      if (t.priority==='high') {
+        const dot = svgEl('circle');
+        attrs(dot,{cx:tp.x+6,cy:tp.y-6,r:3,fill:'#f87171','pointer-events':'none'});
+        tg.appendChild(dot);
+      }
+      tg.onclick = e => { e.stopPropagation(); openPanel(c.id); };
+      wrap.appendChild(tg);
+    });
+  });
+
+  // Draw clusters
+  STATE.clusters.forEach(c => {
+    const col = PALETTE[c.color]||c.color;
+    const done = c.tasks.filter(t=>t.done).length;
+    const total = c.tasks.length;
+    const pct = total ? done/total : 0;
+    const isSelected = STATE.selectedId === c.id;
+
+    const cg = svgEl('g'); cg.classList.add('cluster-g');
+
+    // Glow ring for selected
+    if (isSelected) {
+      const glow = svgEl('ellipse');
+      attrs(glow,{cx:c.x,cy:c.y,rx:CL_RX+8,ry:CL_RY+8,
+        fill:'none',stroke:col+'44','stroke-width':'3'});
+      cg.appendChild(glow);
+    }
+
+    // Ellipse
+    const ell = svgEl('ellipse');
+    ell.classList.add('cluster-ellipse');
+    attrs(ell,{cx:c.x,cy:c.y,rx:CL_RX,ry:CL_RY,
+      fill:col+'18',stroke:col,
+      'stroke-width': isSelected?'2':'1'});
+    cg.appendChild(ell);
+
+    // Progress arc overlay (stroke-dasharray approximation)
+    if (pct > 0) {
+      const perim = Math.PI*(CL_RX+CL_RY); // rough
+      const prog = svgEl('ellipse');
+      attrs(prog,{cx:c.x,cy:c.y,rx:CL_RX,ry:CL_RY,fill:'none',
+        stroke:col,'stroke-width':'2.5',
+        'stroke-dasharray':`${perim*pct} ${perim*(1-pct)+perim}`,
+        'stroke-linecap':'round'});
+      cg.appendChild(prog);
+    }
+
+    // Label
+    const lbl = svgEl('text');
+    attrs(lbl,{x:c.x,y:c.y-5,'text-anchor':'middle','dominant-baseline':'central',
+      'font-size':'13','font-weight':'600','fill':col,'pointer-events':'none'});
+    lbl.textContent = c.label.length>14 ? c.label.slice(0,13)+'…' : c.label;
+    cg.appendChild(lbl);
+
+    // Pct label
+    const pctLbl = svgEl('text');
+    attrs(pctLbl,{x:c.x,y:c.y+11,'text-anchor':'middle','dominant-baseline':'central',
+      'font-size':'10','fill':col+'99','pointer-events':'none'});
+    pctLbl.textContent = total ? `${done}/${total}` : 'no tasks';
+    cg.appendChild(pctLbl);
+
+    // Drag
+    let dragC = null;
+    cg.addEventListener('mousedown', e=>{
+      e.stopPropagation();
+      const svgRect = g.getBoundingClientRect();
+      const scaleX = (w/svgRect.width)/STATE.zoom;
+      const scaleY = (h/svgRect.height)/STATE.zoom;
+      dragC = { ox:c.x, oy:c.y, mx:e.clientX, my:e.clientY, scaleX, scaleY };
+      const onMove = e2 => {
+        c.x = dragC.ox + (e2.clientX-dragC.mx)*dragC.scaleX;
+        c.y = dragC.oy + (e2.clientY-dragC.my)*dragC.scaleY;
+        render();
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        scheduleSave();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    cg.addEventListener('click', e=>{ e.stopPropagation(); openPanel(c.id); });
+    wrap.appendChild(cg);
+  });
+
+  // Root node
+  const rg = svgEl('g'); rg.classList.add('root-g');
+  const rc = svgEl('circle');
+  attrs(rc,{cx:cx,cy:cy,r:ROOT_R,fill:'#1e1e2a',stroke:'#3a3a58','stroke-width':'1.5'});
+  rg.appendChild(rc);
+  ['Work','Map'].forEach((t,i)=>{
+    const rt = svgEl('text');
+    attrs(rt,{x:cx,y:cy+(i===0?-7:9),'text-anchor':'middle','dominant-baseline':'central',
+      'font-size': i===0?'15':'11','font-weight': i===0?'700':'400',
+      'fill': i===0?'#7c6af7':'#9898b0','pointer-events':'none'});
+    rt.textContent=t; rg.appendChild(rt);
+  });
+  wrap.appendChild(rg);
+
+  // Pan handlers on SVG
+  let panning=false, panStart={};
+  g.onmousedown = e=>{
+    if (e.target.closest('.cluster-g,.task-dot-g,.root-g')) return;
+    panning=true; panStart={x:e.clientX-STATE.pan.x,y:e.clientY-STATE.pan.y};
+    document.body.style.cursor='grabbing';
+  };
+  g.onmousemove = e=>{ if (!panning) return; STATE.pan.x=e.clientX-panStart.x; STATE.pan.y=e.clientY-panStart.y; render(); };
+  g.onmouseup = ()=>{ panning=false; document.body.style.cursor=''; };
+  g.onmouseleave = ()=>{ panning=false; document.body.style.cursor=''; };
+
+  renderSidebar();
+}
+
+function taskPositions(c) {
+  const n = c.tasks.length; if (!n) return [];
+  const angle = Math.atan2(c.y - STATE.rootPos.y, c.x - STATE.rootPos.x);
+  const spread = Math.PI * 0.65;
+  const r = 90 + Math.min(n,6)*4;
+  return c.tasks.map((_,i)=>{
+    const a = angle + (i-(n-1)/2)*(spread/Math.max(n-1,1));
+    return { x: c.x+Math.cos(a)*r, y: c.y+Math.sin(a)*r };
+  });
+}
+
+function svgEl(tag){ return document.createElementNS('http://www.w3.org/2000/svg',tag); }
+function attrs(el,obj){ Object.entries(obj).forEach(([k,v])=>el.setAttribute(k,v)); }
+
+// ══════════════════════════════════════════════════════════════
+// LIST VIEW
+// ══════════════════════════════════════════════════════════════
+function renderListView() {
+  const el = document.getElementById('list-view');
+  if (!STATE.clusters.length) { el.innerHTML='<div style="color:var(--text3);font-size:14px;text-align:center;padding:40px">No clusters yet — add one above</div>'; return; }
+  el.innerHTML = STATE.clusters.map(c=>{
+    const col=PALETTE[c.color]||c.color;
+    const done=c.tasks.filter(t=>t.done).length, total=c.tasks.length;
+    return `<div class="lv-project">
+      <div class="lv-proj-header" onclick="toggleLvProject('${c.id}',this)">
+        <div class="lv-proj-dot" style="background:${col}"></div>
+        <div class="lv-proj-name">${escHtml(c.label)}</div>
+        <div class="lv-prog-small">${done}/${total} done</div>
+        <div class="lv-chevron open">▶</div>
+      </div>
+      <div class="lv-tasks open" id="lv-${c.id}">
+        ${c.tasks.map(t=>`
+          <div class="lv-task" onclick="openPanel('${c.id}')">
+            <div class="lv-task-dot" style="background:${t.done?col:col+'55'}"></div>
+            <div class="${t.done?'lv-task-done':''}">${escHtml(t.label)}</div>
+            ${t.priority?`<span class="task-priority p-${t.priority}" style="margin-left:auto">${t.priority}</span>`:''}
+            ${t.due?`<span style="font-size:11px;color:var(--text3);margin-left:${t.priority?'4':'auto'}px">${t.due}</span>`:''}
+          </div>`).join('')}
+        ${!total?`<div style="font-size:12px;color:var(--text3);padding:8px 0">No tasks yet</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLvProject(cid, header) {
+  const tasks = document.getElementById('lv-'+cid);
+  const chev = header.querySelector('.lv-chevron');
+  tasks.classList.toggle('open'); chev.classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════════════════
+// ZOOM / PAN / VIEW
+// ══════════════════════════════════════════════════════════════
+function zoom(factor) {
+  STATE.zoom = Math.min(3, Math.max(0.3, STATE.zoom * factor));
+  document.getElementById('zoom-label').textContent = Math.round(STATE.zoom*100)+'%';
+  render();
+}
+function resetView() { STATE.zoom=1; STATE.pan={x:0,y:0}; document.getElementById('zoom-label').textContent='100%'; render(); }
+function switchView(v) {
+  STATE.view = v;
+  document.getElementById('btn-map').classList.toggle('active', v==='map');
+  document.getElementById('btn-list').classList.toggle('active', v==='list');
+  document.getElementById('canvas-wrap').style.display = v==='map'?'':'none';
+  const lv = document.getElementById('list-view');
+  lv.style.display = v==='list'?'flex':'none';
+  if (v==='list') renderListView();
+  else render();
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+async function init() {
+  const connected = initSupabase();
+  if (connected) {
+    setStatus('saving');
+    const ok = await loadFromSupabase();
+    if (!ok) loadLocal();
+    setStatus('saved');
+    document.getElementById('setup-modal').classList.add('hidden');
+  } else {
+    loadLocal();
+    // Show setup modal only on first visit
+    if (!localStorage.getItem('wm_visited')) {
+      localStorage.setItem('wm_visited','1');
+    } else {
+      document.getElementById('setup-modal').classList.add('hidden');
+      document.getElementById('setup-btn').style.display='flex';
+    }
+  }
+  render();
+  window.addEventListener('resize', ()=>render());
+}
+
+init();
+</script>
+</body>
+</html>
